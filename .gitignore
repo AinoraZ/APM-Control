@@ -138,4 +138,4 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 *.xml
-.idea/workspace.xml
+.idea/
