@@ -1,0 +1,5 @@
+PORT_NAME_LINUX = "/dev/ttyUSB0"
+PORT_NAME_WINDOWS = "COM3"
+PORT_NAME_OSX = "dev/cu.usbmodem1"
+DRONE_LOCAL = True
+DRONE_GPS_FIXER = 0.05
