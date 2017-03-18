@@ -15,9 +15,14 @@ if __name__ == '__main__':
     def connect(sid, environ):
         print('connect ', sid)
 
-    @sio.on('my message')
+    @sio.on('_test_mission')
     def message(sid):
         t = threading.Thread(target = worker._test_mission)
+        t.start()
+
+    @sio.on('force_land')
+    def message(sid):
+        t = threading.Thread(target = worker.land)
         t.start()
 
     @sio.on('disconnect')

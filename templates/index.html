@@ -7,24 +7,33 @@
     <script type="text/javascript" charset="utf-8">
         $(document).ready(function(){
             var socket = io.connect('http://' + document.domain + ':' + location.port);
-            socket.on('my response', function(msg) {
-                $('#log').append('<br>Received: ' + msg.data);
+            socket.on('response', function(msg) {
+                $('#log').append("<br>" + msg.data);
             });
-            $('form#broadcast').submit(function(event) {
-                socket.emit('my message');
+            $('form#mission').submit(function(event) {
+                socket.emit('_test_mission');
+                return false;
+            });
+            $('form#emergency_land').submit(function(event) {
+                socket.emit('force_land');
                 return false;
             });
         });
     </script>
 </head>
-<body>
+<>
     <h1>Flask-SocketIO Test</h1>
     <h2>Send:</h2>
-    <form id="broadcast" method="GET" action='#'>
-        <input type="text" name="broadcast_data" id="broadcast_data" placeholder="Message">
-        <input type="submit" value="Broadcast">
+    <form id="mission" method="GET" action='#'>
+        <input type="submit" value="Test Mission">
+    </form>
+    <br>
+    <form id="emergency_land" method="GET" action='#'>
+        <input type="submit" value="EMERGENCY LAND">
     </form>
     <h2>Receive:</h2>
-    <div><p id="log"></p></div>
+    <div style="height:500px;width:900px;border:3px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;">
+        <p id="log"></p>
+    </div>
 </body>
 </html>

@@ -26,7 +26,7 @@ class DroneControl(object):
     def _test_mission(self):
         if not self.success:
             #print "Drone connection unsuccessful"
-            self.sio.emit('my response', {'data': "Drone connection unsuccessful"})
+            self.sio.emit('response', {'data': "Drone connection unsuccessful"})
             return []
         self.clear_missions()
         self.arm_and_takeoff(2)
@@ -40,7 +40,7 @@ class DroneControl(object):
         while self.vehicle.mode != VehicleMode("AUTO"):
             self.vehicle.mode = VehicleMode("AUTO")
             #print "Changing modes"
-            self.sio.emit('my response', {'data': "Changing modes"})
+            self.sio.emit('response', {'data': "Changing modes"})
             time.sleep(1)
 
     def download_missions(self):
@@ -59,19 +59,19 @@ class DroneControl(object):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
         self.mission_upload()
-        self.sio.emit('my response', {'data': "Mission: Fly to: " + str(lat) + " " + str(lon) + " " + str(alt)})
+        self.sio.emit('response', {'data': "Mission: Fly to: " + str(lat) + " " + str(lon) + " " + str(alt)})
 
     def mission_RTL(self):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.cmds.add(cmd)
         self.mission_upload()
-        self.sio.emit('my response', {'data': "Mission: Return To Launch"})
+        self.sio.emit('response', {'data': "Mission: Return To Launch"})
 
     def mission_change_alt(self, alt):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
         self.cmds.add(cmd)
         self.mission_upload()
-        self.sio.emit('my response', {'data': "Mission: Change altitude to: " + str(alt)})
+        self.sio.emit('response', {'data': "Mission: Change altitude to: " + str(alt)})
 
     def mission_set_home(self, lat=0, lon=0, alt=0):
         # Should not be used as it causes errors and unexpected behaviour (Only fixed in AC 3.3)
@@ -90,80 +90,58 @@ class DroneControl(object):
                 self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True)
             self.cmds = self.vehicle.commands
             self.success = True
-            self.sio.emit('my response', {'data': "Drone connected"})
+            self.sio.emit('response', {'data': "Drone connected"})
 
         # Bad TTY connection
         except exceptions.OSError as e:
             #print 'No serial exists!'
-            self.sio.emit('my response', {'data': 'No serial exists!'})
+            self.sio.emit('response', {'data': 'No serial exists!'})
 
         # API Error
         except APIException:
             #print 'Timeout!'
-            self.sio.emit('my response', {'data': 'Timeout!'})
+            self.sio.emit('response', {'data': 'Timeout!'})
 
         # Other error
         except:
             #print 'Some other error!'
-            self.sio.emit('my response', {'data': 'Some other error!'})
+            self.sio.emit('response', {'data': 'Some other error!'})
 
     def pre_arm_check(self):
         while not self.vehicle.is_armable:
             #print " Waiting for vehicle to initialise..."
-            self.sio.emit('my response', {'data': "Waiting for vehicle to initialise..."})
+            self.sio.emit('response', {'data': "Waiting for vehicle to initialise..."})
             time.sleep(1)
 
     def arm_and_takeoff(self, alt):
         if not self.success:
             return []
 
+        ascend = True
+
         if self.vehicle.armed:
             if self.vehicle.location.global_relative_frame.alt > 0.01:
                 #print "Already in air. Flying to altitude."
-                self.sio.emit('my response', {'data': "Already in air. Flying to altitude."})
+                self.sio.emit('response', {'data': "Already in air. Flying to altitude."})
                 point1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                 self.vehicle.location.global_relative_frame.lon,
                                                 alt)
+                self.vehicle.mode = VehicleMode("GUIDED")
                 self.vehicle.simple_goto(point1)
+                ascend = False
         else:
             self.arm()
 
             if abs(self.vehicle.location.global_relative_frame.alt) < config.DRONE_GPS_FIXER:
                 self.vehicle.simple_takeoff(alt)
                 #print "Taking off!"
-                self.sio.emit('my response', {'data': "Taking off!"})
+                self.sio.emit('response', {'data': "Taking off!"})
 
             else:
                 #print "Can't take off because of bad gps. Adjust config DRONE_GPS_FIXER"
-                self.sio.emit('my response', {'data': "Can't take off because of bad gps. Adjust config DRONE_GPS_FIXER"})
+                self.sio.emit('response', {'data': "Can't take off because of bad gps. Adjust config DRONE_GPS_FIXER"})
 
-        self.takeoff_monitor(alt)
-
-    def takeoff_monitor(self, alt):
-        fail_counter = 0
-        prev_alt = self.vehicle.location.global_relative_frame.alt
-        times_looped = 0
-
-        while True:
-            if times_looped == 10:
-                #print " Altitude: ", self.vehicle.location.global_relative_frame.alt
-                times_looped = 0
-            if self.vehicle.location.global_relative_frame.alt <= prev_alt:
-                fail_counter += 1
-            if fail_counter > 50:
-                #print "Taking off is experiencing difficulties! Switching to LAND"
-                self.sio.emit('my response', {'data': "Taking off is experiencing difficulties! Switching to LAND"})
-                self.land()
-            if self.vehicle.location.global_relative_frame.alt >= alt*0.98:
-
-                #print "Reached target altitude"
-                self.sio.emit('my response', {'data': "Reached target altitude"})
-
-                break
-            prev_alt = self.vehicle.location.global_relative_frame.alt
-            times_looped += 1
-            time.sleep(0.1)
-
+        self.takeoff_monitor(alt, ascend)
 
     def arm(self):
         if not self.success:
@@ -176,23 +154,58 @@ class DroneControl(object):
 
         while not self.vehicle.armed:
             #print "Waiting for arming..."
-            self.sio.emit('my response', {'data': "Waiting for arming..."})
+            self.sio.emit('response', {'data': "Waiting for arming..."})
             time.sleep(1)
 
         #print "ARMED"
-        self.sio.emit('my response', {'data': "ARMED"})
+        self.sio.emit('response', {'data': "ARMED"})
+
+    def takeoff_monitor(self, alt, ascend):
+        fail_counter = 0
+        prev_alt = self.vehicle.location.global_relative_frame.alt
+        times_looped = 0
+
+        while True:
+            if times_looped == 10:
+                #print " Altitude: ", self.vehicle.location.global_relative_frame.alt
+                times_looped = 0
+            if ascend:
+                if self.vehicle.location.global_relative_frame.alt <= prev_alt:
+                    fail_counter += 1
+            else:
+                if self.vehicle.location.global_relative_frame.alt >= prev_alt:
+                    fail_counter += 1
+            if fail_counter > 50:
+                #print "Taking off is experiencing difficulties! Switching to LAND"
+                self.sio.emit('response', {'data': '<font color="red"> Taking off is experiencing difficulties! </font> Switching to LAND'})
+                self.land()
+                self.emergency()
+                break
+            if self.vehicle.location.global_relative_frame.alt >= alt*0.95 and self.vehicle.location.global_relative_frame.alt <= alt * 1.05:
+
+                #print "Reached target altitude"
+                self.sio.emit('response', {'data': "Reached target altitude"})
+
+                break
+            prev_alt = self.vehicle.location.global_relative_frame.alt
+            times_looped += 1
+            time.sleep(0.1)
+
+    def emergency(self):
+        while(not self.vehicle.arm):
+            time.sleep(1)
 
     def set_airspeed(self, air_speed):
         self.vehicle.airspeed = air_speed
 
     def land(self):
         self.vehicle.mode = VehicleMode("LAND")
-        self.sio.emit('my response',{'data': "FORCE Landing"})
+        self.sio.emit('response',{'data': "FORCE Landing"})
         time.sleep(1)
 
     def return_to_home(self):
         self.vehicle.mode = VehicleMode("RTL")
-        self.sio.emit('my response',{'data': "FORCE Returning To Launch"})
+        self.sio.emit('response',{'data': "FORCE Returning To Launch"})
         time.sleep(1)
 
     def get_status(self):
