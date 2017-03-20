@@ -11,4 +11,5 @@ This software provides basic drone mission planning and control as well as a tem
 This project requires python 2.7
 
 `git clone https://github.com/AinoraZ/APM-Control`
+
 `pip install -r requirements.txt`
