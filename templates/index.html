@@ -21,7 +21,7 @@
         });
     </script>
 </head>
-<>
+<body>
     <h1>Flask-SocketIO Test</h1>
     <h2>Send:</h2>
     <form id="mission" method="GET" action='#'>
@@ -31,9 +31,25 @@
     <form id="emergency_land" method="GET" action='#'>
         <input type="submit" value="EMERGENCY LAND">
     </form>
-    <h2>Receive:</h2>
-    <div style="height:500px;width:900px;border:3px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;">
-        <p id="log"></p>
-    </div>
+    <table>
+      <colgroup>
+        <col span="2">
+        <col>
+      </colgroup>
+      <tr>
+        <th>
+            <h2>Terminal:</h2>
+            <form>
+                <input style="height:500px;width:500px;border:3px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;">
+            </form>
+        </th>
+        <th>
+            <h2>Receive:</h2>
+            <div style="height:500px;width:500px;border:3px solid #ccc;font:16px/26px Georgia, Garamond, Serif;overflow:auto;">
+                <p id="log"></p>
+            </div>
+        </th>
+      </tr>
+    </table>
 </body>
 </html>

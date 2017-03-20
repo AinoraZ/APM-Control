@@ -4,7 +4,6 @@ import threading
 import config
 import eventlet.wsgi
 from flask import Flask, render_template
-from cmd import Cmd
 
 if __name__ == '__main__':
     sio = socketio.Server()
@@ -17,7 +16,7 @@ if __name__ == '__main__':
 
     @sio.on('_test_mission')
     def message(sid):
-        t = threading.Thread(target = worker._test_mission)
+        t = threading.Thread(target = worker.arm_and_takeoff, kwargs={'alt': 10})
         t.start()
 
     @sio.on('force_land')
@@ -39,13 +38,3 @@ if __name__ == '__main__':
     app = socketio.Middleware(sio, app)
     eventlet.wsgi.server(eventlet.listen(('', 8001)), app)
 
-    while True:
-        cmd = raw_input("Command: ")
-        if not cmd.__contains__('worker.'):
-            cmd = 'worker.' + cmd
-        if not cmd.__contains__('('):
-            cmd += '()'
-        try:
-            exec cmd
-        except:
-            print "Something went wrong"
