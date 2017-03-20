@@ -2,9 +2,9 @@ from control import DroneControl
 import socketio
 import threading
 import config
-import eventlet
 import eventlet.wsgi
 from flask import Flask, render_template
+from cmd import Cmd
 
 if __name__ == '__main__':
     sio = socketio.Server()
@@ -38,3 +38,14 @@ if __name__ == '__main__':
 
     app = socketio.Middleware(sio, app)
     eventlet.wsgi.server(eventlet.listen(('', 8001)), app)
+
+    while True:
+        cmd = raw_input("Command: ")
+        if not cmd.__contains__('worker.'):
+            cmd = 'worker.' + cmd
+        if not cmd.__contains__('('):
+            cmd += '()'
+        try:
+            exec cmd
+        except:
+            print "Something went wrong"
