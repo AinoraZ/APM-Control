@@ -14,11 +14,11 @@ class DataParser(object):
                 self.rtl()
 
     def takeoff(self, alt):
-        print "taking off"
+        print "taking off: " + str(alt)
 
     def fly_to(self, lat, lon, alt):
-        print "flying to"
+        print "flying to: " + str(lat) + " " + str(lon) + " " + str(alt)
 
     def rtl(self):
-        print 'rtl'
+        print 'Return to launch'
 
