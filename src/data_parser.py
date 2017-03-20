@@ -2,15 +2,15 @@
 class DataParser(object):
     def __init__(self, data):
         self.data = data
-        for mission in self.data:
-            alt = mission["alt"]
+        for mission in self.data["Mission"]:
             lat = mission["lat"]
             lon = mission["lng"]
-            if mission["name"].contains('takeoff'):
+            alt = mission["alt"]
+            if 'takeoff' in mission["name"]:
                 self.takeoff(alt)
-            elif mission["name"].contains('fly_to'):
+            elif 'fly_to' in mission["name"]:
                 self.fly_to(lat, lon, alt)
-            elif mission["name"].contains('rtl'):
+            elif 'rtl' in mission["name"]:
                 self.rtl()
 
     def takeoff(self, alt):
