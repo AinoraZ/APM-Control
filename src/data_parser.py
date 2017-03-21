@@ -16,12 +16,19 @@ class ParseAndWork(object):
                 self.rtl()
         if config.AUTO_ON:
             self.vehicle.vehicle_auto()
+        self.vehicle.mission_upload()
 
     def takeoff(self, alt):
         self.vehicle.arm_and_takeoff(alt)
 
     def fly_to(self, lat, lon, alt):
-        self.vehicle.mission_fly_to(lat, lon, alt)
+        altitude = alt
+        if altitude <= 0:
+            if self.vehicle.get_location() > 0:
+                altitude = self.vehicle.get_location()
+            else:
+                altitude = 2
+        self.vehicle.mission_fly_to(lat, lon, altitude)
 
     def rtl(self):
         self.vehicle.mission_RTL()

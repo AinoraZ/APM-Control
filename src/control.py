@@ -41,7 +41,7 @@ class DroneControl(object):
 
     def download_missions(self):
         self.cmds.download()
-        #self.cmds.wait_ready()
+        self.cmds.wait_ready()
 
     def clear_missions(self):
         self.cmds.clear()
@@ -54,20 +54,23 @@ class DroneControl(object):
     def mission_fly_to(self, lat, lon, alt):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
-        self.mission_upload()
+        #self.mission_upload()
         self.sio.emit('response', {'data': "Mission: Fly to: " + str(lat) + " " + str(lon) + " " + str(alt)})
+        time.sleep(0.2)
 
     def mission_RTL(self):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.cmds.add(cmd)
-        self.mission_upload()
+        #self.mission_upload()
         self.sio.emit('response', {'data': "Mission: Return To Launch"})
+        time.sleep(0.2)
 
     def mission_change_alt(self, alt):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
         self.cmds.add(cmd)
-        self.mission_upload()
+        #self.mission_upload()
         self.sio.emit('response', {'data': "Mission: Change altitude to: " + str(alt)})
+        time.sleep(0.2)
 
     def mission_set_home(self, lat=0, lon=0, alt=0):
         # Should not be used as it causes errors and unexpected behaviour (Only fixed in AC 3.3)
@@ -76,7 +79,7 @@ class DroneControl(object):
             home = 1
         cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, home, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
-        self.mission_upload()
+        #self.mission_upload()
 
     def connect(self, local):
         try:
@@ -217,3 +220,6 @@ class DroneControl(object):
                       mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM, 0, 0, 21196, 0, 0, 0, 0, 0, 0)
         self.cmds.add(cmd)
         self.mission_upload()
+
+    def get_location(self):
+        return self.vehicle.location.global_relative_frame.alt

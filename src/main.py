@@ -41,6 +41,11 @@ if __name__ == '__main__':
         t = threading.Thread(target = worker.clear_missions)
         t.start()
 
+    @sio.on('vehicle_auto')
+    def message(sid):
+        t = threading.Thread(target = worker.vehicle_auto)
+        t.start()
+
     @sio.on('disconnect')
     def disconnect(sid):
         print('disconnect ', sid)
