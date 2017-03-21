@@ -26,7 +26,7 @@ class DroneControl(object):
             return []
         self.clear_missions()
         self.arm_and_takeoff(2)
-        self.fly_to(-35.362753, 149.164526, 3)
+        self.mission_fly_to(-35.362753, 149.164526, 3)
         self.mission_change_alt(2)
         self.mission_RTL()
         self.mission_upload()
@@ -51,7 +51,7 @@ class DroneControl(object):
         self.cmds.upload()
         time.sleep(0.1)
 
-    def fly_to(self, lat, lon, alt):
+    def mission_fly_to(self, lat, lon, alt):
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
         self.mission_upload()
@@ -176,8 +176,8 @@ class DroneControl(object):
             if fail_counter > 13:
                 print "Taking off is experiencing difficulties! Switching to LAND"
                 self.sio.emit('response', {'data': '<font color="red"> Taking off is experiencing difficulties! </font> Switching to LAND'})
-                self.land()
-                self.emergency()
+                self.force_land()
+                self._emergency()
                 break
             if self.vehicle.location.global_relative_frame.alt >= alt*0.95 and self.vehicle.location.global_relative_frame.alt <= alt * 1.05:
 
@@ -189,20 +189,21 @@ class DroneControl(object):
             times_looped += 1
             time.sleep(0.4)
 
-    def emergency(self):
-        while not self.vehicle.armed:
+    def _emergency(self):
+        while self.vehicle.armed:
+            self.sio.emit('response',{'data': '<font color="red"> EMERGENCY </font> Blocking commands in thread!'})
             time.sleep(1)
 
     def set_airspeed(self, air_speed):
         self.vehicle.airspeed = air_speed
 
-    def land(self):
+    def force_land(self):
         self.vehicle.mode = VehicleMode("LAND")
         print "FORCE Landing"
         self.sio.emit('response',{'data': "FORCE Landing"})
         time.sleep(1)
 
-    def return_to_home(self):
+    def force_rtl(self):
         self.vehicle.mode = VehicleMode("RTL")
         self.sio.emit('response',{'data': "FORCE Returning To Launch"})
         time.sleep(1)

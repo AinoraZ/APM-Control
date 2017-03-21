@@ -4,12 +4,12 @@ import threading
 import config
 import eventlet.wsgi
 from flask import Flask, render_template
-from data_parser import DataParser
+from data_parser import ParseAndWork
 
 if __name__ == '__main__':
     #eventlet.monkey_patch()
     sio = socketio.Server()
-    #worker = DroneControl(config.DRONE_LOCAL, sio)
+    worker = DroneControl(config.DRONE_LOCAL, sio)
 
     @sio.on('connect')
     def connect(sid, environ):
@@ -17,20 +17,29 @@ if __name__ == '__main__':
 
     @sio.on('mission')
     def message(sid, data):
-        t = threading.Thread(target = DataParser, kwargs={'data' : data})
+        t = threading.Thread(target = ParseAndWork, kwargs={'data' : data, 'vehicle' : worker})
         t.start()
 
     @sio.on('_test_mission')
     def message(sid):
-        #t = threading.Thread(target = worker.arm_and_takeoff, kwargs={'alt': 10})
+        pass
+        #t = threading.Thread(target = worker.arm_and_takeoff, kwargs={'alt': 2})
         #t.start()
-		print "works"
 
     @sio.on('force_land')
     def message(sid):
-        #t = threading.Thread(target = worker.land)
-        #t.start()
-		print "works"
+        t = threading.Thread(target = worker.force_land)
+        t.start()
+
+    @sio.on('force_rtl')
+    def message(sid):
+        t = threading.Thread(target = worker.force_rtl)
+        t.start()
+
+    @sio.on('clear_missions')
+    def message(sid):
+        t = threading.Thread(target = worker.clear_missions)
+        t.start()
 
     @sio.on('disconnect')
     def disconnect(sid):

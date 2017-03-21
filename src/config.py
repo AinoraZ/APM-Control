@@ -4,3 +4,4 @@ PORT_NAME_OSX = "dev/cu.usbmodem1"
 DRONE_LOCAL = True
 DRONE_GPS_FIXER = 0.05
 DRONE_HEARTBEAT = 10
+AUTO_ON = False
