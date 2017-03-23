@@ -91,6 +91,7 @@ class DroneControl(object):
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
             self.success = True
+            print 'Drone connected'
             self.sio.emit('response', {'data': "Drone connected"})
 
         # Bad TTY connection
@@ -114,6 +115,23 @@ class DroneControl(object):
             self.sio.emit('response', {'data': "Waiting for vehicle to initialise..."})
             time.sleep(1)
 
+    def arm(self):
+        if not self.success:
+            return []
+
+        self.vehicle.mode = VehicleMode("GUIDED")
+        #self.pre_arm_check()
+
+        self.vehicle.armed = True
+
+        while not self.vehicle.armed:
+            print "Waiting for arming..."
+            self.sio.emit('response', {'data': "Waiting for arming..."})
+            time.sleep(1)
+
+        print "ARMED"
+        self.sio.emit('response', {'data': "ARMED"})
+
     def arm_and_takeoff(self, alt):
         if not self.success:
             return []
@@ -133,7 +151,7 @@ class DroneControl(object):
         else:
             self.arm()
 
-            if abs(self.vehicle.location.global_relative_frame.alt) < config.DRONE_GPS_FIXER:
+            if abs(self.vehicle.location.global_relative_frame.alt) <= config.DRONE_GPS_FIXER:
                 self.vehicle.simple_takeoff(alt)
                 print "Taking off!"
                 self.sio.emit('response', {'data': "Taking off!"})
@@ -142,55 +160,57 @@ class DroneControl(object):
                 print "Can't take off because of bad gps. Adjust config DRONE_GPS_FIXER"
                 self.sio.emit('response', {'data': "Can't take off because of bad gps. Adjust config DRONE_GPS_FIXER"})
 
-        self.takeoff_monitor(alt, ascend)
-
-    def arm(self):
-        if not self.success:
-            return []
-
-        self.vehicle.mode = VehicleMode("GUIDED")
-        self.pre_arm_check()
-
-        self.vehicle.armed = True
-
-        while not self.vehicle.armed:
-            print "Waiting for arming..."
-            self.sio.emit('response', {'data': "Waiting for arming..."})
-            time.sleep(1)
-
-        print "ARMED"
-        self.sio.emit('response', {'data': "ARMED"})
+        if self.vehicle.armed:
+            self.takeoff_monitor(alt, ascend)
+        else:
+            print "Vehicle did not arm"
 
     def takeoff_monitor(self, alt, ascend):
         fail_counter = 0
-        prev_alt = self.vehicle.location.global_relative_frame.alt
+        prev_alt = 0
         times_looped = 0
 
         while True:
+            cur_alt = self.get_location_alt()
             if times_looped == 1:
-                print " Altitude: ", self.vehicle.location.global_relative_frame.alt
+                string = "Altitude: {}".format(cur_alt)
+                print string
+                self.sio.emit('response', {'data': string})
                 times_looped = 0
-            if ascend:
-                if self.vehicle.location.global_relative_frame.alt <= prev_alt:
-                    fail_counter += 1
-            else:
-                if self.vehicle.location.global_relative_frame.alt >= prev_alt:
-                    fail_counter += 1
-            if fail_counter > 13:
-                print "Taking off is experiencing difficulties! Switching to LAND"
-                self.sio.emit('response', {'data': '<font color="red"> Taking off is experiencing difficulties! </font> Switching to LAND'})
-                self.force_land()
-                self._emergency()
-                break
-            if self.vehicle.location.global_relative_frame.alt >= alt*0.95 and self.vehicle.location.global_relative_frame.alt <= alt * 1.05:
+            if self._fail_check(ascend, cur_alt, prev_alt):
+                fail_counter += 1
 
+            if fail_counter > config.FAIL_COUNTERS:
+                if config.FAILSAFE_ON:
+                    self.force_loiter()
+                    self._emergency()
+                    break
+
+            if cur_alt >= alt*0.95 and cur_alt <= alt * 1.05:
                 print "Reached target altitude"
                 self.sio.emit('response', {'data': "Reached target altitude"})
-
                 break
-            prev_alt = self.vehicle.location.global_relative_frame.alt
+
+            prev_alt = cur_alt
             times_looped += 1
-            time.sleep(0.4)
+            time.sleep(0.6)
+
+    def _fail_check(self, ascend, cur_alt, prev_alt):
+        if ascend:
+            if cur_alt <= prev_alt:
+                return True
+        else:
+            if cur_alt >= prev_alt:
+                return True
+        return False
+
+    def _print_failsafe(self):
+        failsafe_string = ""
+        if config.FAILSAFE_ON:
+            failsafe_string = "Switching to LOITER"
+        fail_string = "Taking off is experiencing difficulties!{}".format(failsafe_string)
+        print fail_string
+        self.sio.emit('response', {'data': '<font color="red"> Taking off is experiencing difficulties!</font>{}'.format(failsafe_string)})
 
     def _emergency(self):
         while self.vehicle.armed:
@@ -206,13 +226,16 @@ class DroneControl(object):
         self.sio.emit('response',{'data': "FORCE Landing"})
         time.sleep(1)
 
+    def force_loiter(self):
+        self.vehicle.mode = VehicleMode("LOITER")
+        print "FORCE Loiter"
+        self.sio.emit('response',{'data': "FORCE Loiter"})
+        time.sleep(1)
+
     def force_rtl(self):
         self.vehicle.mode = VehicleMode("RTL")
         self.sio.emit('response',{'data': "FORCE Returning To Launch"})
         time.sleep(1)
-
-    def get_status(self):
-        print self.vehicle.location.global_relative_frame.alt
 
     def emergency_disarm(self):
         # APM 3.3 or later
@@ -221,5 +244,10 @@ class DroneControl(object):
         self.cmds.add(cmd)
         self.mission_upload()
 
-    def get_location(self):
+    def print_location(self):
+        string = "Altitude: {}".format(self.get_location_alt())
+        print string
+        self.sio.emit('response', {'data': string})
+
+    def get_location_alt(self):
         return self.vehicle.location.global_relative_frame.alt

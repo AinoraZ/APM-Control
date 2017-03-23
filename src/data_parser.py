@@ -18,17 +18,22 @@ class ParseAndWork(object):
             self.vehicle.vehicle_auto()
         self.vehicle.mission_upload()
 
+    def is_armed(self):
+        return self.vehicle.vehicle.armed
+
     def takeoff(self, alt):
         self.vehicle.arm_and_takeoff(alt)
 
     def fly_to(self, lat, lon, alt):
-        altitude = alt
-        if altitude <= 0:
-            if self.vehicle.get_location() > 0:
-                altitude = self.vehicle.get_location()
-            else:
-                altitude = 2
-        self.vehicle.mission_fly_to(lat, lon, altitude)
+        if self.is_armed():
+            altitude = alt
+            if altitude <= 0:
+                if self.vehicle.get_location_alt() > 1:
+                    altitude = self.vehicle.get_location_alt()
+                else:
+                    altitude = config.DEFAULT_ALT
+            self.vehicle.mission_fly_to(lat, lon, altitude)
 
     def rtl(self):
-        self.vehicle.mission_RTL()
+        if self.is_armed():
+            self.vehicle.mission_RTL()
