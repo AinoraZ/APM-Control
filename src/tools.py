@@ -8,3 +8,6 @@ def port_return():
         return config.PORT_NAME_WINDOWS
     elif platform.startswith('darwin'):
         return config.PORT_NAME_OSX
+
+def find_methods(obj):
+        return [method for method in dir(obj) if callable(getattr(obj, method)) and not method.startswith('_')]
