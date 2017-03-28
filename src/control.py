@@ -4,6 +4,7 @@ import exceptions
 import tools
 import config
 import eventlet
+from listeners import Listen
 
 eventlet.monkey_patch()
 
@@ -17,6 +18,7 @@ class DroneControl(object):
         self.connect(local=local)
         self.taking_off = False
         self.critical = False
+        self.listener = None
 
     def _test_mission(self):
         if not self.success:
@@ -100,6 +102,7 @@ class DroneControl(object):
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
             self.success = True
+            self.listener = Listen(self.vehicle)
             self.download_missions()
             self.clear_missions()
             print 'Drone connected'
