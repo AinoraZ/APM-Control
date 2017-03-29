@@ -20,6 +20,39 @@ class DroneControl(object):
         self.critical = False
         self.listener = None
 
+    def connect(self, local):
+        try:
+            if local:
+                self.vehicle = drone_connect("127.0.0.1:14550", wait_ready=True,
+                                             heartbeat_timeout=config.DRONE_HEARTBEAT)
+            else:
+                self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
+                                             heartbeat_timeout=config.DRONE_HEARTBEAT)
+            self.cmds = self.vehicle.commands
+            self.success = True
+            self.listener = Listen(self.vehicle)
+            self.download_missions()
+            self.clear_missions()
+
+            print 'Drone connected'
+            self.sio.emit('response', {'data': "Drone connected"})
+
+        # Bad TTY connection
+        except exceptions.OSError as e:
+            print 'No serial exists!'
+            self.sio.emit('response', {'data': 'No serial exists!'})
+
+        # API Error
+        except APIException:
+            print 'Timeout!'
+            self.sio.emit('response', {'data': 'Timeout!'})
+
+        # Other error
+        except:
+            print 'Some other error!'
+            self.sio.emit('response', {'data': 'Some other error!'})
+
+
     def _test_mission(self):
         if not self.success:
             print "Drone connection unsuccessful"
@@ -27,7 +60,7 @@ class DroneControl(object):
             return []
         self.clear_missions()
         self.arm_and_takeoff(2)
-        self.mission_fly_to(-35.362753, 149.164526, 3)
+        # self.mission_fly_to(-35.362753, 149.164526, 3)
         self.mission_change_alt(2)
         self.mission_RTL()
         self.mission_upload()
@@ -57,7 +90,6 @@ class DroneControl(object):
             return None
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
-        #self.mission_upload()
         self.sio.emit('response', {'data': "Mission: Fly to: " + str(lat) + " " + str(lon) + " " + str(alt)})
 
     def mission_RTL(self):
@@ -65,7 +97,6 @@ class DroneControl(object):
             return None
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.cmds.add(cmd)
-        #self.mission_upload()
         self.sio.emit('response', {'data': "Mission: Return To Launch"})
 
     def mission_land(self):
@@ -80,7 +111,6 @@ class DroneControl(object):
             return None
         cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
         self.cmds.add(cmd)
-        #self.mission_upload()
         self.sio.emit('response', {'data': "Mission: Change altitude to: " + str(alt)})
 
     def mission_set_home(self, lat=0, lon=0, alt=0):
@@ -90,53 +120,53 @@ class DroneControl(object):
             home = 1
         cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, home, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
-        #self.mission_upload()
-
-    def connect(self, local):
-        try:
-            if local:
-                self.vehicle = drone_connect("127.0.0.1:14550", wait_ready=True,
-                                             heartbeat_timeout=config.DRONE_HEARTBEAT)
-            else:
-                self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
-                                             heartbeat_timeout=config.DRONE_HEARTBEAT)
-            self.cmds = self.vehicle.commands
-            self.success = True
-            self.listener = Listen(self.vehicle)
-            self.download_missions()
-            self.clear_missions()
-            print 'Drone connected'
-            self.sio.emit('response', {'data': "Drone connected"})
-
-        # Bad TTY connection
-        except exceptions.OSError as e:
-            print 'No serial exists!'
-            self.sio.emit('response', {'data': 'No serial exists!'})
-
-        # API Error
-        except APIException:
-            print 'Timeout!'
-            self.sio.emit('response', {'data': 'Timeout!'})
-
-        # Other error
-        except:
-            print 'Some other error!'
-            self.sio.emit('response', {'data': 'Some other error!'})
 
     def pre_arm_check(self):
-        while not self.vehicle.is_armable:
-            print " Waiting for vehicle to initialise..."
+        for fail in range(0, config.PRE_ARM_WAIT):
+            if self.vehicle.is_armable:
+                print "Pre arm check COMPLETE!"
+                self.sio.emit('response', {'data': "Pre arm check COMPLETE!"})
+
+                return True
+            print "Waiting for vehicle to initialise..."
             self.sio.emit('response', {'data': "Waiting for vehicle to initialise..."})
+
             time.sleep(1)
+        print "Failed pre arm check"
+        self.sio.emit('response', {'data': "Failed pre arm check"})
+
+        return False
+
+    def vehicle_guided(self):
+        if config.AUTO_GUIDED:
+            self.vehicle.mode = VehicleMode("GUIDED")
+            print "Switched to GUIDED"
+            self.sio.emit("response", {'data': "Switched to GUIDED"})
+            return True
+        for x in range(0, config.RC_WAIT_TIMEOUT):
+            if self.vehicle.mode.name == "GUIDED":
+                print "GUIDED mode received!"
+                self.sio.emit("response", "GUIDED mode switched!")
+                return True
+            print "Waiting for GUIDED mode..."
+            self.sio.emit("response", {'data': "Waiting for GUIDED mode..."})
+            time.sleep(1)
+        print "RC Input wait timed out! Vehicle will not be armed!"
+        self.sio.emit("response", {'data': "RC Input wait timed out!"})
+        return False
 
     def arm(self):
         if not self.success:
             return []
 
-        self.vehicle.mode = VehicleMode("GUIDED")
-        #self.pre_arm_check()
+        if not self.vehicle_guided():
+            return []
 
+        if config.DO_PRE_ARM:
+            if not self.pre_arm_check():
+                return []
         self.vehicle.armed = True
+
         arm_fail = 0
         while not self.vehicle.armed:
             arm_fail += 1
@@ -172,33 +202,39 @@ class DroneControl(object):
         self.critical = False
 
         if self.vehicle.armed:
-            if self.vehicle.location.global_relative_frame.alt > 0.01:
+            if self.vehicle.location.global_relative_frame.alt > 0.2:
                 print "Already in air. Flying to altitude."
                 self.sio.emit('response', {'data': "Already in air. Flying to altitude."})
                 point1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                 self.vehicle.location.global_relative_frame.lon,
                                                 alt)
-                self.vehicle.mode = VehicleMode("GUIDED")
-                self.vehicle.simple_goto(point1)
+                self.vehicle_guided()
+                if self.vehicle.mode.name == "GUIDED":
+                    self.vehicle.simple_goto(point1)
                 ascend = False
         else:
             self.arm()
-            retry = 0
-            while retry < config.ARM_RETRY_COUNT:
+            retry = -1
+            for fails in range(0, config.ARM_RETRY_COUNT + 1):
+                retry = fails
                 if self.vehicle.armed:
                     if abs(self.vehicle.location.global_relative_frame.alt) >= config.DRONE_GPS_FIXER:
                         self.vehicle.simple_takeoff(alt)
+                        retry -= 1
                         print "Taking off!"
                         self.sio.emit('response', {'data': "Taking off!"})
                         break
                     else:
+                        if retry == config.ARM_RETRY_COUNT + 1:
+                            print "Can't take off because of bad gps. Quiting."
+                            self.sio.emit('response', {'data': "Can't take off because of bad gps. Quiting."})
+                            break
                         print "Can't take off because of bad gps. Retry."
                         self.sio.emit('response', {'data': "Can't take off because of bad gps. Retry."})
                 else:
                     print "Aborting takeoff, not armed!"
                     self.sio.emit('response', {'data': "Aborting takeoff, not armed!"})
                     break
-                retry += 1
                 self.disarm()
                 if self.vehicle.armed:
                     print "Aborting retry, cannot disarm!"
@@ -207,10 +243,10 @@ class DroneControl(object):
                     break
                 self.arm()
 
-        if self.vehicle.armed:
-            if retry < config.ARM_RETRY_COUNT and not self.critical:
+        if self.vehicle.armed and self.vehicle.mode.name == "GUIDED":
+            if retry <= config.ARM_RETRY_COUNT and not self.critical:
                 self.takeoff_monitor(alt, ascend)
-            elif retry < config.ARM_RETRY_COUNT:
+            elif retry <= config.ARM_RETRY_COUNT:
                 self.disarm()
             else:
                 self.taking_off = False
@@ -239,15 +275,15 @@ class DroneControl(object):
                     self._emergency()
                 break
 
-            if cur_alt >= alt*0.95 and cur_alt <= alt * 1.05:
+            if alt*0.95 >= cur_alt <= alt * 1.05:
                 print "Reached target altitude"
                 self.sio.emit('response', {'data': "Reached target altitude"})
-                self.taking_off = False
                 break
 
             prev_alt = cur_alt
             times_looped += 1
             time.sleep(0.5)
+        self.taking_off = False
 
     def _fail_check(self, ascend, cur_alt, prev_alt):
         if ascend:
@@ -264,11 +300,11 @@ class DroneControl(object):
             failsafe_string = "Switching to LOITER"
         fail_string = "Taking off is experiencing difficulties!{}".format(failsafe_string)
         print fail_string
-        self.sio.emit('response', {'data': '<font color="red"> Taking off is experiencing difficulties!</font>{}'.format(failsafe_string)})
+        self.sio.emit('response', {'data': fail_string})
 
     def _emergency(self):
         while self.vehicle.armed:
-            self.sio.emit('response',{'data': '<font color="red"> EMERGENCY </font> Blocking commands in thread!'})
+            self.sio.emit('response', {'data': '<font color="red"> EMERGENCY </font> Blocking commands in thread!'})
             time.sleep(1)
 
     def set_airspeed(self, air_speed):
@@ -277,18 +313,18 @@ class DroneControl(object):
     def force_land(self):
         self.vehicle.mode = VehicleMode("LAND")
         print "FORCE Landing"
-        self.sio.emit('response',{'data': "FORCE Landing"})
+        self.sio.emit('response', {'data': "FORCE Landing"})
         time.sleep(1)
 
     def force_loiter(self):
         self.vehicle.mode = VehicleMode("LOITER")
         print "FORCE Loiter"
-        self.sio.emit('response',{'data': "FORCE Loiter"})
+        self.sio.emit('response', {'data': "FORCE Loiter"})
         time.sleep(1)
 
     def force_RTL(self):
         self.vehicle.mode = VehicleMode("RTL")
-        self.sio.emit('response',{'data': "FORCE Returning To Launch"})
+        self.sio.emit('response', {'data': "FORCE Returning To Launch"})
         time.sleep(1)
 
     def emergency_disarm(self):
@@ -307,6 +343,7 @@ class DroneControl(object):
         return self.vehicle.location.global_relative_frame.alt
 
     def _takeoff_fail(self):
+        print 'Currently taking off. Cannot takeoff again.'
         self.sio.emit('response', {'data': 'Currently taking off. Cannot takeoff again.'})
 
     def remove_critical(self):

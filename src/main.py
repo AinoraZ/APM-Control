@@ -18,7 +18,7 @@ if __name__ == '__main__':
 
     @sio.on('mission')
     def message(sid, data):
-        t = threading.Thread(target = ParseAndWork, kwargs={'data' : data, 'vehicle' : worker})
+        t = threading.Thread(target=ParseAndWork, kwargs={'data' : data, 'vehicle' : worker})
         t.daemon = True
         t.start()
 
@@ -30,25 +30,25 @@ if __name__ == '__main__':
 
     @sio.on('force_land')
     def message(sid):
-        t = threading.Thread(target = worker.force_land)
+        t = threading.Thread(target=worker.force_land)
         t.daemon = True
         t.start()
 
     @sio.on('force_rtl')
     def message(sid):
-        t = threading.Thread(target = worker.force_RTL)
+        t = threading.Thread(target=worker.force_RTL)
         t.daemon = True
         t.start()
 
     @sio.on('clear_missions')
     def message(sid):
-        t = threading.Thread(target = worker.clear_missions)
+        t = threading.Thread(target=worker.clear_missions)
         t.daemon = True
         t.start()
 
     @sio.on('vehicle_auto')
     def message(sid):
-        t = threading.Thread(target = worker.vehicle_auto)
+        t = threading.Thread(target=worker.vehicle_auto)
         t.daemon = True
         t.start()
 
