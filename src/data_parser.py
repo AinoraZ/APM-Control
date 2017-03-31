@@ -1,13 +1,14 @@
 import config
 
-class ParseAndWork(object):
-    def __init__(self, data, vehicle):
-        self.data = data
-        self.vehicle = vehicle
-        self.vehicle.critical = False
 
-        if not self.vehicle.taking_off:
-            self.vehicle.clear_missions()
+class ParseAndWork(object):
+    def __init__(self, data, worker):
+        self.data = data
+        self.worker = worker
+        self.worker.critical = False
+
+        if not self.worker.taking_off:
+            self.worker.clear_missions()
             for mission in self.data["Mission"]:
                 lat = mission["lat"]
                 lon = mission["lng"]
@@ -20,31 +21,27 @@ class ParseAndWork(object):
                     self.rtl()
                 elif 'land' in mission["name"]:
                     self.land()
-            if config.AUTO_ON and self.vehicle.mode.name == "GUIDED" and self.is_safe():
-                self.vehicle.vehicle_auto()
-            self.vehicle.mission_upload()
-            self.vehicle.critical = False
-
-    def is_safe(self):
-        return (self.vehicle.vehicle.armed and not self.vehicle.critical)
+            self.worker.vehicle_auto_safe()
+            self.worker.mission_upload()
+            self.worker.critical = False
 
     def takeoff(self, alt):
-        self.vehicle.arm_and_takeoff(alt)
+        self.worker.arm_and_takeoff(alt)
 
     def fly_to(self, lat, lon, alt):
-        if self.is_safe():
+        if self.worker.is_safe():
             altitude = alt
             if altitude <= 0:
-                if self.vehicle.get_location_alt() > 1:
-                    altitude = self.vehicle.get_location_alt()
+                if self.worker.get_location_alt() > 1:
+                    altitude = self.worker.get_location_alt()
                 else:
                     altitude = config.DEFAULT_ALT
-            self.vehicle.mission_fly_to(lat, lon, altitude)
+            self.worker.mission_fly_to(lat, lon, altitude)
 
     def rtl(self):
-        if self.is_safe():
-            self.vehicle.mission_RTL()
+        if self.worker.is_safe():
+            self.worker.mission_RTL()
 
     def land(self):
-        if self.is_safe():
-            self.vehicle.mission_land()
+        if self.worker.is_safe():
+            self.worker.mission_land()

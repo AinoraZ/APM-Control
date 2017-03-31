@@ -16,9 +16,20 @@ if __name__ == '__main__':
         pass
         #print('connect ', sid)
 
+    @sio.on("vehicle_connect")
+    def vehicle_connect(sid):
+        if not worker.success:
+            worker.connect(config.DRONE_LOCAL)
+        else:
+            print "Already connected"
+
+    @sio.on("vehicle_disconnect")
+    def vehicle_disconnect(sid):
+        worker.disconnect()
+
     @sio.on('mission')
     def message(sid, data):
-        t = threading.Thread(target=ParseAndWork, kwargs={'data' : data, 'vehicle' : worker})
+        t = threading.Thread(target=ParseAndWork, kwargs={'data': data, 'vehicle': worker})
         t.daemon = True
         t.start()
 
@@ -40,6 +51,12 @@ if __name__ == '__main__':
         t.daemon = True
         t.start()
 
+    @sio.on('force_loiter')
+    def message(sid):
+        t = threading.Thread(target=worker.force_loiter)
+        t.daemon = True
+        t.start()
+
     @sio.on('clear_missions')
     def message(sid):
         t = threading.Thread(target=worker.clear_missions)
@@ -52,24 +69,41 @@ if __name__ == '__main__':
         t.daemon = True
         t.start()
 
-    @sio.on("vehicle_connect")
-    def vehicle_connect(sid):
-        if not worker.success:
-            worker.connect(config.DRONE_LOCAL)
-        else:
-            print "Already connected"
+    @sio.on('vehicle_guided')
+    def message(sid):
+        t = threading.Thread(target=worker.vehicle_guided)
+        t.daemon = True
+        t.start()
 
-    @sio.on("vehicle_disconnect")
-    def vehicle_disconnect(sid):
-        if worker.success:
-            worker.listener._remove_listeners()
-        if worker.vehicle != []:
-            worker.vehicle.close()
-        else:
-            print "Not connected!"
-            sio.emit("response", {'data': "Not connected!"})
-        worker.success = False
-        print worker
+    @sio.on('set_airspeed')
+    def message(sid, data):
+        t = threading.Thread(target=worker.set_airspeed, kwargs={'air_speed': data})
+        t.daemon = True
+        t.start()
+
+    @sio.on('arm')
+    def message(sid):
+        t = threading.Thread(target=worker.arm)
+        t.daemon = True
+        t.start()
+
+    @sio.on('remove_bad_status')
+    def message(sid):
+        t = threading.Thread(target=worker.remove_bad_status)
+        t.daemon = True
+        t.start()
+
+    @sio.on('arm_direct')
+    def message(sid):
+        t = threading.Thread(target=worker.arm_direct)
+        t.daemon = True
+        t.start()
+
+    @sio.on('disarm')
+    def message(sid):
+        t = threading.Thread(target=worker.disarm)
+        t.daemon = True
+        t.start()
 
     @sio.on('disconnect')
     def disconnect(sid):

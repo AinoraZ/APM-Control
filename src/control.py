@@ -52,6 +52,16 @@ class DroneControl(object):
             print 'Some other error!'
             self.sio.emit('response', {'data': 'Some other error!'})
 
+    def disconnect(self):
+        if self.success:
+            self.listener._remove_listeners()
+        if self.vehicle != []:
+            self.success = False
+            self.vehicle.close()
+        else:
+            print "Not connected!"
+            self.sio.emit("response", {'data': "Not connected!"})
+
 
     def _test_mission(self):
         if not self.success:
@@ -61,10 +71,13 @@ class DroneControl(object):
         self.clear_missions()
         self.arm_and_takeoff(2)
         # self.mission_fly_to(-35.362753, 149.164526, 3)
-        self.mission_change_alt(2)
+        self.mission_change_alt(3)
         self.mission_RTL()
         self.mission_upload()
         self.vehicle_auto()
+
+    def is_safe(self):
+        return self.vehicle.armed and not self.critical
 
     def vehicle_auto(self):
         while self.vehicle.mode != VehicleMode("AUTO"):
@@ -72,6 +85,12 @@ class DroneControl(object):
             print "Changing mode to AUTO"
             self.sio.emit('response', {'data': "Changing mode to AUTO"})
             time.sleep(1)
+        print "Switched to AUTO"
+        self.sio.emit("response", {'data': "Switched to AUTO"})
+
+    def vehicle_auto_safe(self):
+        if config.AUTO_ON and self.vehicle.mode.name == "GUIDED" and self.is_safe():
+            self.vehicle_auto()
 
     def download_missions(self):
         self.cmds.download()
@@ -88,21 +107,21 @@ class DroneControl(object):
     def mission_fly_to(self, lat, lon, alt):
         if self.taking_off:
             return None
-        cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
+        cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0, 0, 0, 0, lat, lon, alt)
         self.cmds.add(cmd)
         self.sio.emit('response', {'data': "Mission: Fly to: " + str(lat) + " " + str(lon) + " " + str(alt)})
 
     def mission_RTL(self):
         if self.taking_off:
             return None
-        cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.cmds.add(cmd)
         self.sio.emit('response', {'data': "Mission: Return To Launch"})
 
     def mission_land(self):
         if self.taking_off:
             return None
-        cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0, 0, 0, 0, 0, 0, 0)
         self.cmds.add(cmd)
         self.sio.emit('response', {'data': "Mission: Land"})
 
@@ -138,10 +157,17 @@ class DroneControl(object):
         return False
 
     def vehicle_guided(self):
-        if config.AUTO_GUIDED:
+        while self.vehicle.mode.name != "GUIDED":
             self.vehicle.mode = VehicleMode("GUIDED")
-            print "Switched to GUIDED"
-            self.sio.emit("response", {'data': "Switched to GUIDED"})
+            print "Changing mode to GUIDED"
+            self.sio.emit('response', {'data': "Changing mode to GUIDED"})
+            time.sleep(1)
+        print "Switched to GUIDED"
+        self.sio.emit("response", {'data': "Switched to GUIDED"})
+
+    def vehicle_guided_safe(self):
+        if config.AUTO_GUIDED:
+            self.vehicle_guided()
             return True
         for x in range(0, config.RC_WAIT_TIMEOUT):
             if self.vehicle.mode.name == "GUIDED":
@@ -155,16 +181,7 @@ class DroneControl(object):
         self.sio.emit("response", {'data': "RC Input wait timed out!"})
         return False
 
-    def arm(self):
-        if not self.success:
-            return []
-
-        if not self.vehicle_guided():
-            return []
-
-        if config.DO_PRE_ARM:
-            if not self.pre_arm_check():
-                return []
+    def arm_direct(self):
         self.vehicle.armed = True
 
         arm_fail = 0
@@ -182,12 +199,24 @@ class DroneControl(object):
             print "ARMED"
             self.sio.emit('response', {'data': "ARMED"})
 
+    def arm(self):
+        if not self.success:
+            return []
+
+        if not self.vehicle_guided_safe():
+            return []
+
+        if config.DO_PRE_ARM:
+            if not self.pre_arm_check():
+                return []
+        self.arm_direct()
+
     def disarm(self):
         disarm_fail = 0
         while self.vehicle.armed:
             if disarm_fail > config.ARM_FAIL_NUMBER:
                 print "Failed to disarm!"
-            self.sio.emit('response', {'data': "Failed to disarm!"})
+                self.sio.emit('response', {'data': "Failed to disarm!"})
             self.vehicle.armed = False
             print "Waiting for disarming..."
             self.sio.emit('response', {'data': "Waiting for disarming..."})
@@ -208,7 +237,7 @@ class DroneControl(object):
                 point1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                 self.vehicle.location.global_relative_frame.lon,
                                                 alt)
-                self.vehicle_guided()
+                self.vehicle_guided_safe()
                 if self.vehicle.mode.name == "GUIDED":
                     self.vehicle.simple_goto(point1)
                 ascend = False
