@@ -15,10 +15,11 @@ class DroneControl(object):
         self.vehicle = []
         self.success = False
         self.cmds = ""
+        self.listen = None
         self.connect(local=local)
         self.taking_off = False
         self.critical = False
-        self.listener = None
+
 
     def connect(self, local):
         try:
@@ -30,7 +31,7 @@ class DroneControl(object):
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
             self.success = True
-            self.listener = Listen(self)
+            self.listen = Listen(self)
             self.download_missions()
             self.clear_missions()
 
@@ -54,10 +55,12 @@ class DroneControl(object):
 
     def disconnect(self):
         if self.success:
-            self.listener._remove_listeners()
+            self.listen._remove_listeners()
         if self.vehicle != []:
             self.success = False
             self.vehicle.close()
+            print "Vehicle disconnected successfully"
+            self.sio.emit("response", {'data': "Vehicle disconnected successfully"})
         else:
             print "Not connected!"
             self.sio.emit("response", {'data': "Not connected!"})

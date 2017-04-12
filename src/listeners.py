@@ -23,6 +23,10 @@ class Listen(object):
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
 
     def _remove_listeners(self):
+        obj = {'lat' : 0, 'lng' : 0, 'alt' : 0}
+        self.sio.emit('location', obj)
+        obj = {'pitch': 0, 'yaw': 0, 'roll': 0}
+        self.sio.emit('gyro', obj)
         self.vehicle.remove_attribute_listener('attitude', self.attitude_listener)
         self.vehicle.remove_attribute_listener('location.global_relative_frame', self.frame_listener)
 
