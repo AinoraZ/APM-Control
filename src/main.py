@@ -29,7 +29,7 @@ if __name__ == '__main__':
 
     @sio.on('mission')
     def message(sid, data):
-        t = threading.Thread(target=ParseAndWork, kwargs={'data': data, 'vehicle': worker})
+        t = threading.Thread(target=ParseAndWork, kwargs={'data': data, 'worker': worker})
         t.daemon = True
         t.start()
 

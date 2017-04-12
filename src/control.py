@@ -30,7 +30,7 @@ class DroneControl(object):
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
             self.success = True
-            self.listener = Listen(self.vehicle)
+            self.listener = Listen(self)
             self.download_missions()
             self.clear_missions()
 
@@ -48,9 +48,9 @@ class DroneControl(object):
             self.sio.emit('response', {'data': 'Timeout!'})
 
         # Other error
-        except:
-            print 'Some other error!'
-            self.sio.emit('response', {'data': 'Some other error!'})
+        except Exception as e:
+            print e
+            self.sio.emit('response', {'data': e})
 
     def disconnect(self):
         if self.success:
@@ -80,11 +80,17 @@ class DroneControl(object):
         return self.vehicle.armed and not self.critical
 
     def vehicle_auto(self):
+        retry = 0
         while self.vehicle.mode != VehicleMode("AUTO"):
             self.vehicle.mode = VehicleMode("AUTO")
             print "Changing mode to AUTO"
             self.sio.emit('response', {'data': "Changing mode to AUTO"})
             time.sleep(1)
+            retry += 1
+            if retry >= config.RC_WAIT_TIMEOUT:
+                print "Failed to switch to AUTO"
+                self.sio.emit("response", {'data': "Failed to switch to AUTO"})
+                return False
         print "Switched to AUTO"
         self.sio.emit("response", {'data': "Switched to AUTO"})
 
@@ -174,7 +180,7 @@ class DroneControl(object):
                 print "GUIDED mode received!"
                 self.sio.emit("response", "GUIDED mode switched!")
                 return True
-            print "Waiting for GUIDED mode..."
+            print "Waiting for GUIDED mode... ({}/{})".format(x + 1, config.RC_WAIT_TIMEOUT)
             self.sio.emit("response", {'data': "Waiting for GUIDED mode..."})
             time.sleep(1)
         print "RC Input wait timed out! Vehicle will not be armed!"
@@ -202,9 +208,9 @@ class DroneControl(object):
     def arm(self):
         if not self.success:
             return []
-
-        if not self.vehicle_guided_safe():
-            return []
+        if self.vehicle.mode.name != "GUIDED":
+            if not self.vehicle_guided_safe():
+                return []
 
         if config.DO_PRE_ARM:
             if not self.pre_arm_check():
@@ -229,6 +235,7 @@ class DroneControl(object):
         ascend = True
         self.taking_off = True
         self.critical = False
+        retry = -1
 
         if self.vehicle.armed:
             if self.vehicle.location.global_relative_frame.alt > 0.2:
@@ -237,26 +244,27 @@ class DroneControl(object):
                 point1 = LocationGlobalRelative(self.vehicle.location.global_relative_frame.lat,
                                                 self.vehicle.location.global_relative_frame.lon,
                                                 alt)
-                self.vehicle_guided_safe()
+                if self.vehicle.mode.name != "GUIDED":
+                    self.vehicle_guided_safe()
                 if self.vehicle.mode.name == "GUIDED":
                     self.vehicle.simple_goto(point1)
                 ascend = False
         else:
             self.arm()
-            retry = -1
             for fails in range(0, config.ARM_RETRY_COUNT + 1):
                 retry = fails
                 if self.vehicle.armed:
-                    if abs(self.vehicle.location.global_relative_frame.alt) >= config.DRONE_GPS_FIXER:
+                    if abs(self.get_location_alt()) <= config.DRONE_GPS_FIXER:
                         self.vehicle.simple_takeoff(alt)
-                        retry -= 1
+                        retry = -1
                         print "Taking off!"
                         self.sio.emit('response', {'data': "Taking off!"})
                         break
                     else:
-                        if retry == config.ARM_RETRY_COUNT + 1:
+                        if retry == config.ARM_RETRY_COUNT:
                             print "Can't take off because of bad gps. Quiting."
                             self.sio.emit('response', {'data': "Can't take off because of bad gps. Quiting."})
+                            retry += 1
                             break
                         print "Can't take off because of bad gps. Retry."
                         self.sio.emit('response', {'data': "Can't take off because of bad gps. Retry."})
@@ -275,8 +283,9 @@ class DroneControl(object):
         if self.vehicle.armed and self.vehicle.mode.name == "GUIDED":
             if retry <= config.ARM_RETRY_COUNT and not self.critical:
                 self.takeoff_monitor(alt, ascend)
-            elif retry <= config.ARM_RETRY_COUNT:
+            elif retry > config.ARM_RETRY_COUNT:
                 self.disarm()
+                self.taking_off = False
             else:
                 self.taking_off = False
         else:
@@ -285,7 +294,7 @@ class DroneControl(object):
     def takeoff_monitor(self, alt, ascend):
         fail_counter = 0
         prev_alt = 0
-        times_looped = 0
+        times_looped = 1
 
         while True:
             cur_alt = self.get_location_alt()
@@ -304,7 +313,7 @@ class DroneControl(object):
                     self._emergency()
                 break
 
-            if alt*0.95 >= cur_alt <= alt * 1.05:
+            if alt*0.95 <= cur_alt <= alt * 1.05:
                 print "Reached target altitude"
                 self.sio.emit('response', {'data': "Reached target altitude"})
                 break
@@ -327,12 +336,13 @@ class DroneControl(object):
         failsafe_string = ""
         if config.FAILSAFE_ON:
             failsafe_string = "Switching to LOITER"
-        fail_string = "Taking off is experiencing difficulties!{}".format(failsafe_string)
+        fail_string = "Taking off is experiencing difficulties! {}".format(failsafe_string)
         print fail_string
         self.sio.emit('response', {'data': fail_string})
 
     def _emergency(self):
         while self.vehicle.armed:
+            print "EMERGENCY locking commands in thread!"
             self.sio.emit('response', {'data': '<font color="red"> EMERGENCY </font> Blocking commands in thread!'})
             time.sleep(1)
 

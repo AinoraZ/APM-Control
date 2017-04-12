@@ -9,21 +9,25 @@ class ParseAndWork(object):
 
         if not self.worker.taking_off:
             self.worker.clear_missions()
-            for mission in self.data["Mission"]:
-                lat = mission["lat"]
-                lon = mission["lng"]
-                alt = mission["alt"]
+            for mission in self.data:
                 if 'takeoff' in mission["name"]:
+                    alt = mission["alt"]
                     self.takeoff(alt)
                 elif 'fly_to' in mission["name"]:
+                    lat = mission["lat"]
+                    lon = mission["lng"]
+                    alt = mission["alt"]
                     self.fly_to(lat, lon, alt)
                 elif 'rtl' in mission["name"]:
                     self.rtl()
                 elif 'land' in mission["name"]:
                     self.land()
-            self.worker.vehicle_auto_safe()
-            self.worker.mission_upload()
             self.worker.critical = False
+            self.worker.mission_upload()
+            self.worker.vehicle_auto_safe()
+        else:
+            print "Vehicle is currently taking off. Uploading missions is currently blocked."
+            self.worker.sio.emit('response', {'data': "Vehicle is currently taking off. Uploading missions is currently blocked."})
 
     def takeoff(self, alt):
         self.worker.arm_and_takeoff(alt)

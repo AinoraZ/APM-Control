@@ -1,10 +1,10 @@
 import tools
 
 class Listen(object):
-    def __init__(self, worker):
-        self.vehicle = worker.vehicle
+    def __init__(self, vehicle):
+        self.vehicle = vehicle.vehicle
         self._add_listeners()
-        self.sio = worker.sio
+        self.sio = vehicle.sio
 
     def attitude_listener(self, attribute, name, msg):
         att = self.vehicle.attitude
