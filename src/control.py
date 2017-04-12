@@ -8,6 +8,7 @@ from listeners import Listen
 
 eventlet.monkey_patch()
 
+
 class DroneControl(object):
     def __init__(self, local, sio, app=""):
         self.app = app
@@ -20,11 +21,10 @@ class DroneControl(object):
         self.taking_off = False
         self.critical = False
 
-
     def connect(self, local):
         try:
             if local:
-                self.vehicle = drone_connect("127.0.0.1:14550", wait_ready=True,
+                self.vehicle = drone_connect("tcp:127.0.0.1:5760", wait_ready=True,
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             else:
                 self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
@@ -316,7 +316,7 @@ class DroneControl(object):
                     self._emergency()
                 break
 
-            if alt*0.95 <= cur_alt <= alt * 1.05:
+            if (alt*0.95 <= cur_alt and ascend) or (cur_alt <= alt * 1.05 and not ascend):
                 print "Reached target altitude"
                 self.sio.emit('response', {'data': "Reached target altitude"})
                 break

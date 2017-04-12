@@ -18,9 +18,15 @@ class Listen(object):
         self.sio.emit('location', obj)
         #print obj
 
+    def battery_listener(self, attribute, name, value):
+        voltage = self.vehicle.battery.voltage
+        #print voltage
+        self.sio.emit('battery', voltage)
+
     def _add_listeners(self):
         self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
+        self.vehicle.add_attribute_listener('battery', self.battery_listener)
 
     def _remove_listeners(self):
         obj = {'lat' : 0, 'lng' : 0, 'alt' : 0}
@@ -29,4 +35,4 @@ class Listen(object):
         self.sio.emit('gyro', obj)
         self.vehicle.remove_attribute_listener('attitude', self.attitude_listener)
         self.vehicle.remove_attribute_listener('location.global_relative_frame', self.frame_listener)
-
+        self.vehicle.remove_attribute_listener('battery', self.battery_listener)
