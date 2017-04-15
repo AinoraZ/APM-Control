@@ -15,6 +15,8 @@ class Listen(object):
     def frame_listener(self, attribute, name, value):
         obj = {'lat': value.lat, 'lng': value.lon, 'alt': value.alt}
         self.sio.emit('location_info', obj)
+        self.sio.emit('mode_info', self.vehicle.mode.name)
+        self.sio.emit('armed_info', self.vehicle.armed)
 
     def battery_listener(self, attribute, name, value):
         max_dif = 4.2 * config.BATTERY_CELL_COUNT - 3 * config.BATTERY_CELL_COUNT
@@ -24,9 +26,6 @@ class Listen(object):
         obj = {'voltage': value.voltage, 'level': level}
         #print obj
         self.sio.emit('battery_info', obj)
-        self.sio.emit('mode_info', self.vehicle.mode.name)
-        self.sio.emit('armed_info', self.vehicle.armed)
-        print self.vehicle.mode.name
 
     def compass_listener(self, attribute, name, value):
         self.sio.emit('compass_info', value)

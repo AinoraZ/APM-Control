@@ -22,7 +22,12 @@ def make_config():
 
 def change_config(data):
     for var in data:
-        try:
-            eval('config.{} = {}'.format(var["name"], var["value"]))
-        except Exception as e:
-            print "Problem changing oonfig:", e
+        x = var["value"]
+        if x == "true":
+            x = "True"
+        if x == "false":
+            x = "False"
+        elif not x.isdigit():
+            exec 'config.{} = "{}"'.format(var["name"], x)
+        exec 'config.{} = {}'.format(var["name"], x)
+    print config.BATTERY_CELL_COUNT

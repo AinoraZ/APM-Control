@@ -24,7 +24,7 @@ class DroneControl(object):
     def connect(self, local):
         try:
             if local:
-                self.vehicle = drone_connect("127.0.0.1:14550", wait_ready=True,
+                self.vehicle = drone_connect("tcp:127.0.0.1:5760", wait_ready=True,
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             else:
                 self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
@@ -260,8 +260,8 @@ class DroneControl(object):
                     if abs(self.get_location_alt()) <= config.DRONE_GPS_FIXER:
                         self.vehicle.simple_takeoff(alt)
                         retry = -1
-                        print "Taking off!"
-                        self.sio.emit('response', {'data': "Taking off!"})
+                        print "Taking off to altitude:{}".format(alt)
+                        self.sio.emit('response', {'data': "Taking off to altitude:{}".format(alt)})
                         break
                     else:
                         if retry == config.ARM_RETRY_COUNT:
@@ -292,7 +292,7 @@ class DroneControl(object):
             else:
                 self.taking_off = False
         else:
-            self.taking_off = False
+            self.remove_bad_status()
 
     def takeoff_monitor(self, alt, ascend):
         fail_counter = 0
