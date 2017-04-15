@@ -4,14 +4,13 @@ import config
 class Listen(object):
     def __init__(self, vehicle):
         self.vehicle = vehicle.vehicle
-        self._add_listeners()
         self.sio = vehicle.sio
+        self._add_listeners()
 
-    def attitude_listener(self, attribute, name, msg):
-        att = self.vehicle.attitude
-        obj = {'pitch': att.pitch, 'yaw': att.yaw, 'roll': att.roll}
-        self.sio.emit('gyro_info', obj)
+    def attitude_listener(self, attribute, name, value):
+        obj = {'pitch': value.pitch, 'yaw': value.yaw, 'roll': value.roll}
         #print obj
+        self.sio.emit('gyro_info', obj)
 
     def frame_listener(self, attribute, name, value):
         obj = {'lat': value.lat, 'lng': value.lon, 'alt': value.alt}
@@ -19,15 +18,18 @@ class Listen(object):
 
     def battery_listener(self, attribute, name, value):
         max_dif = 4.2 * config.BATTERY_CELL_COUNT - 3 * config.BATTERY_CELL_COUNT
-        dif = value - (3 * config.BATTERY_CELL_COUNT)
+        dif = value.voltage - (3 * config.BATTERY_CELL_COUNT)
         level = int(dif/max_dif * 100)
 
-        obj = {'voltage': value, 'level': level}
-        print obj
+        obj = {'voltage': value.voltage, 'level': level}
+        #print obj
         self.sio.emit('battery_info', obj)
+        self.sio.emit('mode_info', self.vehicle.mode.name)
+        self.sio.emit('armed_info', self.vehicle.armed)
+        print self.vehicle.mode.name
 
     def compass_listener(self, attribute, name, value):
-            self.sio.emit('compass_info', value)
+        self.sio.emit('compass_info', value)
 
     def arm_listener(self, attribute, name, value):
         self.sio.emit('armed_info', value)
@@ -41,7 +43,7 @@ class Listen(object):
     def _add_listeners(self):
         self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
-        self.vehicle.add_attribute_listener('battery.voltage', self.battery_listener)
+        self.vehicle.add_attribute_listener('battery', self.battery_listener)
         self.vehicle.add_attribute_listener('heading', self.compass_listener)
         self.vehicle.add_attribute_listener('armed', self.arm_listener)
         self.vehicle.add_attribute_listener('mode', self.mode_listener)
@@ -53,7 +55,7 @@ class Listen(object):
 
         self.vehicle.remove_attribute_listener('attitude', self.attitude_listener)
         self.vehicle.remove_attribute_listener('location.global_relative_frame', self.frame_listener)
-        self.vehicle.remove_attribute_listener('battery.voltage', self.battery_listener)
+        self.vehicle.remove_attribute_listener('battery', self.battery_listener)
         self.vehicle.remove_attribute_listener('heading', self.compass_listener)
         self.vehicle.remove_attribute_listener('armed', self.arm_listener)
         self.vehicle.remove_attribute_listener('mode', self.mode_listener)

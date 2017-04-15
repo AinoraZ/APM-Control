@@ -3,11 +3,13 @@ import socketio
 import threading
 import config
 import eventlet.wsgi
+import tools
 from flask import Flask, render_template
 from data_parser import ParseAndWork
 
 if __name__ == '__main__':
     #eventlet.monkey_patch()
+
     sio = socketio.Server()
     worker = DroneControl(config.DRONE_LOCAL, sio)
 
@@ -32,12 +34,6 @@ if __name__ == '__main__':
         t = threading.Thread(target=ParseAndWork, kwargs={'data': data, 'worker': worker})
         t.daemon = True
         t.start()
-
-    @sio.on('_test_mission')
-    def message(sid):
-        pass
-        #t = threading.Thread(target = worker.arm_and_takeoff, kwargs={'alt': 2})
-        #t.start()
 
     @sio.on('force_land')
     def message(sid):
@@ -104,6 +100,14 @@ if __name__ == '__main__':
         t = threading.Thread(target=worker.disarm)
         t.daemon = True
         t.start()
+
+    @sio.on('get_config')
+    def get_config(sid):
+        sio.emit('config_response', tools.make_config())
+
+    @sio.on('config_post')
+    def get_config(sid, data):
+        tools.change_config(data)
 
     @sio.on('disconnect')
     def disconnect(sid):
