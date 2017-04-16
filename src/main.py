@@ -11,7 +11,11 @@ if __name__ == '__main__':
     #eventlet.monkey_patch()
 
     sio = socketio.Server()
+
+    reset_config_data = tools.make_config(False)
+    tools.load_config()
     worker = DroneControl(config.DRONE_LOCAL, sio)
+    tools.config_settable_init(worker)
 
     @sio.on('connect')
     def connect(sid, environ):
@@ -24,6 +28,7 @@ if __name__ == '__main__':
             worker.connect(config.DRONE_LOCAL)
         else:
             print "Already connected"
+            sio.emit('response', {'data': "Already connected"})
 
     @sio.on("vehicle_disconnect")
     def vehicle_disconnect(sid):
@@ -107,7 +112,24 @@ if __name__ == '__main__':
 
     @sio.on('config_post')
     def get_config(sid, data):
-        tools.change_config(data)
+        tools.change_config(data, worker)
+
+    @sio.on('reset_config')
+    def reset_config(sid):
+        tools.change_config(reset_config_data, worker)
+        sio.emit('config_response', tools.make_config())
+
+    @sio.on('set_airspeed')
+    def set_airspeed(sid, data):
+        worker.set_airspeed(data)
+        print "airspeed set to", data
+
+    @sio.on('get_data')
+    def get_data(sid):
+        if worker.success:
+            worker.listen.initial_send()
+        else:
+            sio.emit('response', {'data': "Not connected"})
 
     @sio.on('disconnect')
     def disconnect(sid):

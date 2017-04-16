@@ -1,0 +1,74 @@
+[
+    {
+        "name": "ARM_FAIL_NUMBER",
+        "value": 10
+    },
+    {
+        "name": "ARM_RETRY_COUNT",
+        "value": 2
+    },
+    {
+        "name": "AUTO_GUIDED",
+        "value": true
+    },
+    {
+        "name": "AUTO_ON",
+        "value": true
+    },
+    {
+        "name": "BATTERY_CELL_COUNT",
+        "value": 4
+    },
+    {
+        "name": "DEFAULT_ALT",
+        "value": 2
+    },
+    {
+        "name": "DO_PRE_ARM",
+        "value": false
+    },
+    {
+        "name": "DRONE_GPS_FIXER",
+        "value": 1
+    },
+    {
+        "name": "DRONE_HEARTBEAT",
+        "value": 10
+    },
+    {
+        "name": "DRONE_LOCAL",
+        "value": true
+    },
+    {
+        "name": "FAILSAFE_ON",
+        "value": false
+    },
+    {
+        "name": "FAIL_COUNTERS",
+        "value": 15
+    },
+    {
+        "name": "PORT_NAME_LINUX",
+        "value": "/dev/ttyUSB0"
+    },
+    {
+        "name": "PORT_NAME_OSX",
+        "value": "dev/cu.usbmodem1"
+    },
+    {
+        "name": "PORT_NAME_WINDOWS",
+        "value": "COM3"
+    },
+    {
+        "name": "PRE_ARM_WAIT",
+        "value": 20
+    },
+    {
+        "name": "RC_WAIT_TIMEOUT",
+        "value": 30
+    },
+    {
+        "name": "SET_AIRSPEED",
+        "value": 4
+    }
+]

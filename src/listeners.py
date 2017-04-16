@@ -1,5 +1,5 @@
 import config
-
+import tools
 
 class Listen(object):
     def __init__(self, vehicle):
@@ -15,15 +15,9 @@ class Listen(object):
     def frame_listener(self, attribute, name, value):
         obj = {'lat': value.lat, 'lng': value.lon, 'alt': value.alt}
         self.sio.emit('location_info', obj)
-        self.sio.emit('mode_info', self.vehicle.mode.name)
-        self.sio.emit('armed_info', self.vehicle.armed)
 
     def battery_listener(self, attribute, name, value):
-        max_dif = 4.2 * config.BATTERY_CELL_COUNT - 3 * config.BATTERY_CELL_COUNT
-        dif = value.voltage - (3 * config.BATTERY_CELL_COUNT)
-        level = int(dif/max_dif * 100)
-
-        obj = {'voltage': value.voltage, 'level': level}
+        obj = {'voltage': value.voltage, 'level': tools.calculate_battery(value.voltage)}
         #print obj
         self.sio.emit('battery_info', obj)
 
@@ -39,6 +33,30 @@ class Listen(object):
     def speed_listener(self, attribute, name, value):
         self.sio.emit('speed_info', {'groundspeed': self.vehicle.groundspeed, 'airspeed': value})
 
+    def velocity_listener(self, attribute, name, value):
+        self.sio.emit('velocity_info', {'x': value[0], 'y': value[1], 'z': value[2]})
+
+    def initial_send(self):
+        attitude = self.vehicle.attitude
+        obj = {'pitch': attitude.pitch, 'yaw': attitude.yaw, 'roll': attitude.roll}
+        self.sio.emit('gyro_info', obj)
+
+        location = self.vehicle.location.global_relative_frame
+        obj = {'lat': location.lat, 'lng': location.lon, 'alt': location.alt}
+        self.sio.emit('location_info', obj)
+
+        battery = self.vehicle.battery
+        obj = {'voltage': battery.voltage, 'level': tools.calculate_battery(battery.voltage)}
+        self.sio.emit('battery_info', obj)
+
+        self.sio.emit('compass_info', self.vehicle.heading)
+        self.sio.emit('armed_info', self.vehicle.armed)
+        self.sio.emit('mode_info', self.vehicle.mode.name)
+        self.sio.emit('speed_info', {'groundspeed': self.vehicle.groundspeed, 'airspeed': self.vehicle.airspeed})
+
+        vel = self.vehicle.velocity
+        self.sio.emit('velocity_info', {'x': vel[0], 'y': vel[1], 'z': vel[2]})
+
     def _add_listeners(self):
         self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
         self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
@@ -47,6 +65,7 @@ class Listen(object):
         self.vehicle.add_attribute_listener('armed', self.arm_listener)
         self.vehicle.add_attribute_listener('mode', self.mode_listener)
         self.vehicle.add_attribute_listener('airspeed', self.speed_listener)
+        self.vehicle.add_attribute_listener('velocity', self.velocity_listener)
 
     def _remove_listeners(self):
         obj = {'pitch': 0, 'yaw': 0, 'roll': 0}
@@ -59,3 +78,4 @@ class Listen(object):
         self.vehicle.remove_attribute_listener('armed', self.arm_listener)
         self.vehicle.remove_attribute_listener('mode', self.mode_listener)
         self.vehicle.remove_attribute_listener('airspeed', self.speed_listener)
+        self.vehicle.add_attribute_listener('velocity', self.velocity_listener)
