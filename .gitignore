@@ -141,3 +141,4 @@ $RECYCLE.BIN/
 .idea/
 TODO.TODO
 storage/config.json
+*.json
