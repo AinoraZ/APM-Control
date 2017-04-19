@@ -32,8 +32,6 @@ class DroneControl(object):
             self.cmds = self.vehicle.commands
             self.success = True
             self.listen = Listen(self)
-            self.download_missions()
-            self.clear_missions()
 
             print 'Drone connected'
             self.sio.emit('response', {'data': "Drone connected"})
@@ -108,7 +106,6 @@ class DroneControl(object):
     def clear_missions(self):
         self.cmds.clear()
         self.mission_upload()
-        self.download_missions()
 
     def mission_upload(self):
         self.cmds.upload()
