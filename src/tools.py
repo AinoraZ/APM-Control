@@ -2,6 +2,7 @@ from sys import platform
 import config
 import json
 
+
 def port_return():
     if platform.startswith('linux'):
         return config.PORT_NAME_LINUX
@@ -10,8 +11,10 @@ def port_return():
     elif platform.startswith('darwin'):
         return config.PORT_NAME_OSX
 
+
 def find_methods(obj):
         return [method for method in dir(obj) if callable(getattr(obj, method)) and not method.startswith('_')]
+
 
 def make_config(save=True):
     config_list = []
@@ -30,6 +33,7 @@ def make_config(save=True):
             json.dump(config_list, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     return config_list
 
+
 def change_config_legacy(data, worker):
     for key, var in enumerate(data):
         var["value"] = str(var["value"])
@@ -47,10 +51,12 @@ def change_config_legacy(data, worker):
         json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     load_config(worker)
 
+
 def change_config(data, worker):
     with open('../storage/config.json', 'wb') as outfile:
         json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     load_config(worker)
+
 
 def load_config(worker=None):
     with open('../storage/config.json') as data_file:
@@ -64,6 +70,7 @@ def load_config(worker=None):
                 if var["name"].startswith('SET_'):
                     exec 'worker.{}({})'.format(var["name"].lower(), var["value"])
 
+
 def config_settable_init(worker):
     if worker.success:
         with open('../storage/config.json') as data_file:
@@ -71,6 +78,7 @@ def config_settable_init(worker):
             for var in data:
                 if var["name"].startswith('SET_'):
                     exec 'worker.{}({})'.format(var["name"].lower(), var["value"])
+
 
 def calculate_battery(voltage):
     max_dif = 4.2 * config.BATTERY_CELL_COUNT - 3 * config.BATTERY_CELL_COUNT
