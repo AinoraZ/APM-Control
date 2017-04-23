@@ -8,7 +8,8 @@ class Listen(object):
         self._add_listeners()
 
     def attitude_listener(self, attribute, name, value):
-        obj = {'pitch': value.pitch, 'yaw': value.yaw, 'roll': value.roll}
+        obj = {'pitch': value.pitch, 'yaw': value.yaw, 'roll': value.roll,
+               'speed': self.vehicle.groundspeed, 'altitude': self.vehicle.location.global_relative_frame.alt}
         #print obj
         self.sio.emit('gyro_info', obj)
 
@@ -38,7 +39,8 @@ class Listen(object):
 
     def initial_send(self):
         attitude = self.vehicle.attitude
-        obj = {'pitch': attitude.pitch, 'yaw': attitude.yaw, 'roll': attitude.roll}
+        obj = {'pitch': attitude.pitch, 'yaw': attitude.yaw, 'roll': attitude.roll,
+               'speed': self.vehicle.groundspeed, 'altitude': self.vehicle.location.global_relative_frame.alt}
         self.sio.emit('gyro_info', obj)
 
         location = self.vehicle.location.global_relative_frame

@@ -17,14 +17,20 @@ def make_config(save=True):
     config_list = []
     for var in dir(config):
         if not var.startswith('_'):
-            obj = {'name': var, 'value': eval("config.{}".format(var))}
+            value = eval("config.{}".format(var))
+            type_local = type(value).__name__
+            if type_local == "int" or type_local == "float":
+                type_local = "number"
+            if type_local == "str":
+                type_local = "string"
+            obj = {'name': var, 'value': value, 'type': type_local}
             config_list.append(obj)
     if save:
         with open('../storage/config.json', 'wb') as outfile:
             json.dump(config_list, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     return config_list
 
-def change_config(data, worker):
+def change_config_legacy(data, worker):
     for key, var in enumerate(data):
         var["value"] = str(var["value"])
         counter = var["value"].count('.')
@@ -41,6 +47,11 @@ def change_config(data, worker):
         json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     load_config(worker)
 
+def change_config(data, worker):
+    with open('../storage/config.json', 'wb') as outfile:
+        json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
+    load_config(worker)
+
 def load_config(worker=None):
     with open('../storage/config.json') as data_file:
         data = json.load(data_file)
@@ -49,16 +60,17 @@ def load_config(worker=None):
                 exec 'config.{} = {}'.format(var["name"], var["value"])
             else:
                 exec 'config.{} = "{}"'.format(var["name"], var["value"])
-            if worker != None:
+            if worker != None and worker.success:
                 if var["name"].startswith('SET_'):
                     exec 'worker.{}({})'.format(var["name"].lower(), var["value"])
 
 def config_settable_init(worker):
-    with open('../storage/config.json') as data_file:
-        data = json.load(data_file)
-        for var in data:
-            if var["name"].startswith('SET_'):
-                exec 'worker.{}({})'.format(var["name"].lower(), var["value"])
+    if worker.success:
+        with open('../storage/config.json') as data_file:
+            data = json.load(data_file)
+            for var in data:
+                if var["name"].startswith('SET_'):
+                    exec 'worker.{}({})'.format(var["name"].lower(), var["value"])
 
 def calculate_battery(voltage):
     max_dif = 4.2 * config.BATTERY_CELL_COUNT - 3 * config.BATTERY_CELL_COUNT

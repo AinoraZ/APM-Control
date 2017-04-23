@@ -26,6 +26,7 @@ if __name__ == '__main__':
     def vehicle_connect(sid):
         if not worker.success:
             worker.connect(config.DRONE_LOCAL)
+            tools.config_settable_init(worker)
         else:
             print "Already connected"
             sio.emit('response', {'data': "Already connected"})
