@@ -105,8 +105,10 @@ if __name__ == '__main__':
         sio.emit('config_response', tools.make_config())
 
     @sio.on('config_post')
-    def get_config(sid, data):
+    def config_post(sid, data):
         tools.change_config(data, worker)
+        sio.emit('response', {'data': "Config changed"})
+        print "Config changed"
 
     @sio.on('reset_config')
     def reset_config(sid):
