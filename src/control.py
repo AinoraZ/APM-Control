@@ -30,10 +30,10 @@ class DroneControl(object):
                 self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
-            self.sio.emit("vehicle_success", self.success)
             self.listen = Listen(self)
             self.download_missions()
             self.success = True
+            self.sio.emit("vehicle_success", self.success)
 
             print 'Vehicle connected successfully'
             self.sio.emit('response', {'data': "Vehicle connected successfully"})
