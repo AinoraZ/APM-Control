@@ -84,19 +84,13 @@ if __name__ == '__main__':
 
     @sio.on('arm')
     def message(sid):
-        t = threading.Thread(target=worker.arm)
+        t = threading.Thread(target=worker.arm_direct)
         t.daemon = True
         t.start()
 
     @sio.on('remove_bad_status')
     def message(sid):
         t = threading.Thread(target=worker.remove_bad_status)
-        t.daemon = True
-        t.start()
-
-    @sio.on('arm_direct')
-    def message(sid):
-        t = threading.Thread(target=worker.arm_direct)
         t.daemon = True
         t.start()
 

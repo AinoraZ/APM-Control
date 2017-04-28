@@ -7,9 +7,10 @@ class ParseAndWork(object):
         self.worker = worker
         self.worker.critical = False
 
-        if not self.worker.taking_off:
+        if not self.worker.taking_off and self.worker.success:
             self.worker.clear_missions()
             for mission in self.data:
+                print mission["name"]
                 if 'takeoff' in mission["name"]:
                     alt = mission["alt"]
                     self.takeoff(alt)

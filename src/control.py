@@ -30,12 +30,13 @@ class DroneControl(object):
                 self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
-            self.success = True
             self.sio.emit("vehicle_success", self.success)
             self.listen = Listen(self)
+            self.download_missions()
+            self.success = True
 
-            print 'Drone connected'
-            self.sio.emit('response', {'data': "Drone connected"})
+            print 'Vehicle connected successfully'
+            self.sio.emit('response', {'data': "Vehicle connected successfully"})
 
         # Bad TTY connection
         except exceptions.OSError as e:
@@ -99,15 +100,18 @@ class DroneControl(object):
 
     def vehicle_auto_safe(self):
         if config.AUTO_ON and self.vehicle.mode.name == "GUIDED" and self.is_safe():
+            print self.cmds.count
             self.vehicle_auto()
 
     def download_missions(self):
         self.cmds.download()
-        self.cmds.wait_ready()
+        self.cmds.wait_ready(timeout=40)
 
     def clear_missions(self):
+        print "trying to clear"
         self.cmds.clear()
         self.mission_upload()
+        print self.cmds.count
 
     def mission_upload(self):
         self.cmds.upload()
@@ -194,6 +198,11 @@ class DroneControl(object):
         return False
 
     def arm_direct(self):
+        if not self.success:
+            return []
+        if config.DO_PRE_ARM:
+            if not self.pre_arm_check():
+                return []
         self.vehicle.armed = True
 
         arm_fail = 0
@@ -212,14 +221,8 @@ class DroneControl(object):
             self.sio.emit('response', {'data': "ARMED"})
 
     def arm(self):
-        if not self.success:
-            return []
         if self.vehicle.mode.name != "GUIDED":
             if not self.vehicle_guided_safe():
-                return []
-
-        if config.DO_PRE_ARM:
-            if not self.pre_arm_check():
                 return []
         self.arm_direct()
 
@@ -233,6 +236,9 @@ class DroneControl(object):
             print "Waiting for disarming..."
             self.sio.emit('response', {'data': "Waiting for disarming..."})
             time.sleep(1)
+        if not self.vehicle.armed:
+            print "ARMED"
+            self.sio.emit('response', {'data': "DISARMED"})
 
     def arm_and_takeoff(self, alt):
         if not self.success or self.taking_off:
