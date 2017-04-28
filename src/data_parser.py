@@ -22,6 +22,11 @@ class ParseAndWork(object):
                     self.rtl()
                 elif 'land' in mission["name"]:
                     self.land()
+                elif 'roi' in mission["name"]:
+                    lat = mission["lat"]
+                    lon = mission["lng"]
+                    alt = mission["alt"]
+                    self.roi(lat, lon, alt)
             self.worker.critical = False
             self.worker.mission_upload()
             self.worker.vehicle_auto_safe()
@@ -49,3 +54,8 @@ class ParseAndWork(object):
     def land(self):
         if self.worker.is_safe():
             self.worker.mission_land()
+
+    def roi(self, lat, lon, alt):
+        if self.worker.is_safe():
+            self.worker.mission_set_roi(lat, lon, alt)
+

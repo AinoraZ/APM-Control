@@ -31,6 +31,7 @@ class DroneControl(object):
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
             self.success = True
+            self.sio.emit("vehicle_success", self.success)
             self.listen = Listen(self)
 
             print 'Drone connected'
@@ -59,6 +60,7 @@ class DroneControl(object):
             self.vehicle.close()
             print "Vehicle disconnected successfully"
             self.sio.emit("response", {'data': "Vehicle disconnected successfully"})
+            self.sio.emit("vehicle_success", self.success)
         else:
             print "Not connected!"
             self.sio.emit("response", {'data': "Not connected!"})
@@ -134,9 +136,13 @@ class DroneControl(object):
     def mission_change_alt(self, alt):
         if self.taking_off:
             return None
-        cmd = Command( 0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
+        cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)
         self.cmds.add(cmd)
         self.sio.emit('response', {'data': "Mission: Change altitude to: " + str(alt)})
+
+    def mission_set_roi(self, lat, lon, alt):
+        cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_DO_SET_ROI,0, 0, 0, 0, 0, 0, lat, lon, alt)
+        self.cmds.add(cmd)
 
     def mission_set_home(self, lat=0, lon=0, alt=0):
         # Should not be used as it causes errors and unexpected behaviour (Only fixed in AC 3.3)

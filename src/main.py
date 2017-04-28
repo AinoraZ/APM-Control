@@ -19,8 +19,7 @@ if __name__ == '__main__':
 
     @sio.on('connect')
     def connect(sid, environ):
-        pass
-        #print('connect ', sid)
+        sio.emit("vehicle_success", worker.success)
 
     @sio.on("vehicle_connect")
     def vehicle_connect(sid):
@@ -130,12 +129,11 @@ if __name__ == '__main__':
         if worker.success:
             worker.listen.initial_send()
         else:
-            sio.emit('response', {'data': "Not connected"})
+            sio.emit('response', {'data': "Drone is not connected!"})
 
     @sio.on('disconnect')
     def disconnect(sid):
-        pass
-        #print('disconnect ', sid)
+        print('disconnect ', sid)
 
     #app = Flask(__name__, template_folder='../templates')
     #app.debug = True
