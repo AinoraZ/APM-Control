@@ -29,7 +29,7 @@ def make_config(save=True):
             obj = {'name': var, 'value': value, 'type': type_local}
             config_list.append(obj)
     if save:
-        with open('../storage/config.json', 'wb') as outfile:
+        with open('./storage/config.json', 'wb') as outfile:
             json.dump(config_list, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     return config_list
 
@@ -47,19 +47,19 @@ def change_config_legacy(data, worker):
             data[key]["value"] = True
         elif var["value"].lower() == "false":
             data[key]["value"] = False
-    with open('../storage/config.json', 'wb') as outfile:
+    with open('./storage/config.json', 'wb') as outfile:
         json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     load_config(worker)
 
 
 def change_config(data, worker):
-    with open('../storage/config.json', 'wb') as outfile:
+    with open('./storage/config.json', 'wb') as outfile:
         json.dump(data, outfile, sort_keys=True, indent=4, separators=(',', ': '))
     load_config(worker)
 
 
 def load_config(worker=None):
-    with open('../storage/config.json') as data_file:
+    with open('./storage/config.json') as data_file:
         data = json.load(data_file)
         for var in data:
             if not isinstance(var["value"], basestring):
@@ -73,7 +73,7 @@ def load_config(worker=None):
 
 def config_settable_init(worker):
     if worker.success:
-        with open('../storage/config.json') as data_file:
+        with open('./storage/config.json') as data_file:
             data = json.load(data_file)
             for var in data:
                 if var["name"].startswith('SET_'):

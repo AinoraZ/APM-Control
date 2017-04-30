@@ -6,6 +6,8 @@ import eventlet.wsgi
 import tools
 from flask import Flask, render_template
 from data_parser import ParseAndWork
+from sendip import Sender
+import time
 
 if __name__ == '__main__':
     #eventlet.monkey_patch()
@@ -138,5 +140,13 @@ if __name__ == '__main__':
     #def index():
         #return render_template("index.html")
 
+    sender = Sender()
+    ip = threading.Thread(target=sender.run)
+    ip.daemon = True
+    ip.start()
+
+    while sender.ip_collection == None:
+        time.sleep(1)
+
     app = socketio.Middleware(sio)
-    eventlet.wsgi.server(eventlet.listen(('', 8001)), app)
+    eventlet.wsgi.server(eventlet.listen((sender.ip_collection[1], 8001)), app)
