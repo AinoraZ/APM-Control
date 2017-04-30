@@ -6,12 +6,10 @@ import eventlet.wsgi
 import tools
 from flask import Flask, render_template
 from data_parser import ParseAndWork
-from sendip import Sender
 import time
+from pyroute2 import IPDB
 
 if __name__ == '__main__':
-    #eventlet.monkey_patch()
-
     sio = socketio.Server()
 
     reset_config_data = tools.make_config(False)
@@ -140,13 +138,18 @@ if __name__ == '__main__':
     #def index():
         #return render_template("index.html")
 
-    sender = Sender()
-    ip = threading.Thread(target=sender.run)
-    ip.daemon = True
-    ip.start()
 
-    while sender.ip_collection == None:
-        time.sleep(1)
+    ip = IPDB()
+
+    state = None
+    while state == None:
+        try:
+            state = ip.interfaces.wlp2s0.ipaddr[0]["address"]
+        except:
+            state = None
+        time.sleep(2)
+
+    ip.release()
 
     app = socketio.Middleware(sio)
-    eventlet.wsgi.server(eventlet.listen((sender.ip_collection[1], 8001)), app)
+    eventlet.wsgi.server(eventlet.listen((state, 8001)), app)

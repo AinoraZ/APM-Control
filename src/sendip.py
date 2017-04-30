@@ -5,7 +5,7 @@ import time
 import requests
 import eventlet
 
-eventlet.monkey_patch()
+#eventlet.monkey_patch()
 
 
 class Sender(object):

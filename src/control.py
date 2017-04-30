@@ -6,7 +6,7 @@ import config
 import eventlet
 from listeners import Listen
 
-eventlet.monkey_patch()
+#eventlet.monkey_patch()
 
 
 class DroneControl(object):
