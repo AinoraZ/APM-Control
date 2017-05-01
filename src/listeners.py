@@ -88,6 +88,7 @@ class Listen(object):
             time.sleep(0.5)
 
     def _add_listeners(self):
+        self.loop = True
         self.listen_all()
         #self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
         #self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
