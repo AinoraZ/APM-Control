@@ -1,6 +1,7 @@
 import config
 import tools
 import time
+import threading
 
 class Listen(object):
     def __init__(self, vehicle):
@@ -89,7 +90,9 @@ class Listen(object):
 
     def _add_listeners(self):
         self.loop = True
-        self.listen_all()
+        t = threading.Thread(target=self.listen_all)
+        t.daemon = True
+        t.start()
         #self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
         #self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
         #self.vehicle.add_attribute_listener('battery', self.battery_listener)
