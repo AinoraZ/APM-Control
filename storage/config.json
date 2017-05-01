@@ -1,74 +1,92 @@
 [
     {
         "name": "ARM_FAIL_NUMBER",
+        "type": "number",
         "value": 10
     },
     {
         "name": "ARM_RETRY_COUNT",
+        "type": "number",
         "value": 2
     },
     {
         "name": "AUTO_GUIDED",
-        "value": true
+        "type": "bool",
+        "value": false
     },
     {
         "name": "AUTO_ON",
+        "type": "bool",
         "value": true
     },
     {
         "name": "BATTERY_CELL_COUNT",
+        "type": "number",
         "value": 4
     },
     {
         "name": "DEFAULT_ALT",
+        "type": "number",
         "value": 2
     },
     {
         "name": "DO_PRE_ARM",
+        "type": "bool",
         "value": false
     },
     {
         "name": "DRONE_GPS_FIXER",
+        "type": "number",
         "value": 1
     },
     {
         "name": "DRONE_HEARTBEAT",
+        "type": "number",
         "value": 10
     },
     {
         "name": "DRONE_LOCAL",
-        "value": true
+        "type": "bool",
+        "value": false
     },
     {
         "name": "FAILSAFE_ON",
+        "type": "bool",
         "value": false
     },
     {
         "name": "FAIL_COUNTERS",
+        "type": "number",
         "value": 15
     },
     {
         "name": "PORT_NAME_LINUX",
-        "value": "/dev/ttyUSB0"
+        "type": "string",
+        "value": "/dev/ttyACM0"
     },
     {
         "name": "PORT_NAME_OSX",
+        "type": "string",
         "value": "dev/cu.usbmodem1"
     },
     {
         "name": "PORT_NAME_WINDOWS",
+        "type": "string",
         "value": "COM3"
     },
     {
         "name": "PRE_ARM_WAIT",
+        "type": "number",
         "value": 20
     },
     {
         "name": "RC_WAIT_TIMEOUT",
+        "type": "number",
         "value": 30
     },
     {
         "name": "SET_AIRSPEED",
+        "type": "number",
         "value": 4
     }
 ]

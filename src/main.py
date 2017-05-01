@@ -4,7 +4,7 @@ import threading
 import config
 import eventlet.wsgi
 import tools
-from flask import Flask, render_template
+from flask import Flask, render_template, send_from_directory
 from data_parser import ParseAndWork
 import time
 from pyroute2 import IPDB
@@ -15,7 +15,8 @@ if __name__ == '__main__':
     reset_config_data = tools.make_config(False)
     tools.load_config()
     worker = DroneControl(config.DRONE_LOCAL, sio)
-    tools.config_settable_init(worker)
+
+    print "Worker initialised"
 
     @sio.on('connect')
     def connect(sid, environ):
@@ -131,25 +132,20 @@ if __name__ == '__main__':
     def disconnect(sid):
         print('disconnect ', sid)
 
-    #app = Flask(__name__, template_folder='../templates')
-    #app.debug = True
-
-    #@app.route('/')
-    #def index():
-        #return render_template("index.html")
-
-
-    ip = IPDB()
-
-    state = None
-    while state == None:
+    state = ""
+    while not state.startswith('192.'):
+        ip = IPDB()
         try:
-            state = ip.interfaces.wlp2s0.ipaddr[0]["address"]
-        except:
-            state = None
+            state = ip.interfaces.wlan0.ipaddr[0]["address"]
+            print state
+	    if state.startswith('192.'):
+		break	
+	except:
+            state = ''
+        ip.release()
         time.sleep(2)
-
-    ip.release()
+    
+    print "Got Ip"
 
     app = socketio.Middleware(sio)
     eventlet.wsgi.server(eventlet.listen((state, 8001)), app)

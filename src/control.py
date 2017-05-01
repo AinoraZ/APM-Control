@@ -6,7 +6,7 @@ import config
 import eventlet
 from listeners import Listen
 
-#eventlet.monkey_patch()
+eventlet.monkey_patch()
 
 
 class DroneControl(object):
@@ -17,7 +17,6 @@ class DroneControl(object):
         self.success = False
         self.cmds = ""
         self.listen = None
-        self.connect(local=local)
         self.taking_off = False
         self.critical = False
 
@@ -27,7 +26,8 @@ class DroneControl(object):
                 self.vehicle = drone_connect("127.0.0.1:14550", wait_ready=True,
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             else:
-                self.vehicle = drone_connect(tools.port_return(), baud=57600, wait_ready=True,
+                print tools.port_return()
+                self.vehicle = drone_connect(tools.port_return(), baud=115200, wait_ready=True,
                                              heartbeat_timeout=config.DRONE_HEARTBEAT)
             self.cmds = self.vehicle.commands
             self.listen = Listen(self)

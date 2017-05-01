@@ -10,11 +10,11 @@ class Listen(object):
     def attitude_listener(self, attribute, name, value):
         obj = {'pitch': value.pitch, 'yaw': value.yaw, 'roll': value.roll,
                'speed': self.vehicle.groundspeed, 'altitude': self.vehicle.location.global_relative_frame.alt}
-        #print obj
         self.sio.emit('gyro_info', obj)
 
     def frame_listener(self, attribute, name, value):
         obj = {'lat': value.lat, 'lng': value.lon, 'alt': value.alt}
+        #print obj
         self.sio.emit('location_info', obj)
 
     def battery_listener(self, attribute, name, value):
@@ -23,6 +23,7 @@ class Listen(object):
         self.sio.emit('battery_info', obj)
 
     def compass_listener(self, attribute, name, value):
+        #print value
         self.sio.emit('compass_info', value)
 
     def arm_listener(self, attribute, name, value):
