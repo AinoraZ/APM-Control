@@ -4,10 +4,8 @@ import threading
 import config
 import eventlet.wsgi
 import tools
-from flask import Flask, render_template, send_from_directory
 from data_parser import ParseAndWork
 import time
-from pyroute2 import IPDB
 
 if __name__ == '__main__':
     sio = socketio.Server()
@@ -132,20 +130,5 @@ if __name__ == '__main__':
     def disconnect(sid):
         print('disconnect ', sid)
 
-    state = ""
-    while not state.startswith('192.'):
-        ip = IPDB()
-        try:
-            state = ip.interfaces.wlan0.ipaddr[0]["address"]
-            print state
-            if state.startswith('192.'):
-                break
-        except:
-            state = ''
-            ip.release()
-            time.sleep(2)
-    
-    print "Got Ip"
-
     app = socketio.Middleware(sio)
-    eventlet.wsgi.server(eventlet.listen((state, 8001)), app)
+    eventlet.wsgi.server(eventlet.listen(('192.168.1.200', 8001)), app)

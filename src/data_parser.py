@@ -28,6 +28,9 @@ class ParseAndWork(object):
                     lon = mission["lng"]
                     alt = mission["alt"]
                     self.roi(lat, lon, alt)
+                elif 'change_alt' in mission["name"]:
+                    alt = mission["alt"]
+                    self.change_alt(alt)
             self.worker.critical = False
             self.worker.mission_upload()
             self.worker.vehicle_auto_safe()
@@ -59,4 +62,8 @@ class ParseAndWork(object):
     def roi(self, lat, lon, alt):
         if self.worker.is_safe():
             self.worker.mission_set_roi(lat, lon, alt)
+
+    def change_alt(self, alt):
+        if self.worker.is_safe():
+            self.worker.mission_change_alt(alt)
 

@@ -138,6 +138,7 @@ class DroneControl(object):
         self.sio.emit('response', {'data': "Mission: Land"})
 
     def mission_change_alt(self, alt):
+        alt = int(alt)
         if self.taking_off:
             return None
         cmd = Command(0, 0, 0, mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT, mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 0, 0, 0, 0, 0, 0, alt)

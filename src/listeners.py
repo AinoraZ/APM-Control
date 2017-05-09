@@ -89,19 +89,22 @@ class Listen(object):
             time.sleep(0.5)
 
     def listen_onesock(self):
-        attitude = self.vehicle.attitude
-        location = self.vehicle.location.global_relative_frame
-        battery = self.vehicle.battery
-        vel = self.vehicle.velocity
+        while self.loop:
+            # print "sending..."
+            attitude = self.vehicle.attitude
+            location = self.vehicle.location.global_relative_frame
+            battery = self.vehicle.battery
+            vel = self.vehicle.velocity
 
-        att_obj = {'pitch': attitude.pitch, 'yaw': attitude.yaw, 'roll': attitude.roll}
-        loc_obj = {'lat': location.lat, 'lng': location.lon, 'alt': location.alt}
-        bat_obj = {'voltage': battery.voltage, 'level': tools.calculate_battery(battery.voltage)}
-        vel_obj = {'x': vel[0], 'y': vel[1], 'z': vel[2]}
-        speed_obj = {'groundspeed': self.vehicle.groundspeed, 'airspeed': self.vehicle.airspeed}
-        random_obj = {'armed': self.vehicle.armed, 'compass': self.vehicle.heading, 'mode': self.vehicle.mode.name}
+            all_obj = {'pitch': attitude.pitch, 'yaw': attitude.yaw, 'roll': attitude.roll,
+                       'lat': location.lat, 'lng': location.lon, 'alt': location.alt,
+                       'voltage': battery.voltage, 'level': tools.calculate_battery(battery.voltage),
+                       'x': vel[0], 'y': vel[1], 'z': vel[2],
+                       'groundspeed': self.vehicle.groundspeed, 'airspeed': self.vehicle.airspeed,
+                       'armed': self.vehicle.armed, 'compass': self.vehicle.heading, 'mode': self.vehicle.mode.name}
 
-        self.sio.emit('all_info', att_obj, loc_obj, bat_obj, vel_obj, speed_obj, random_obj)
+            self.sio.emit('all_info', all_obj)
+            time.sleep(0.1)
 
         # self.sio.emit('compass_info', self.vehicle.heading)
         # self.sio.emit('armed_info', self.vehicle.armed)
@@ -109,7 +112,7 @@ class Listen(object):
 
     def _add_listeners(self):
         self.loop = True
-        t = threading.Thread(target=self.listen_all)
+        t = threading.Thread(target=self.listen_onesock)
         t.daemon = True
         t.start()
         # self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
