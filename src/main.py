@@ -138,12 +138,12 @@ if __name__ == '__main__':
         try:
             state = ip.interfaces.wlan0.ipaddr[0]["address"]
             print state
-	    if state.startswith('192.'):
-		break	
-	except:
+            if state.startswith('192.'):
+                break
+        except:
             state = ''
-        ip.release()
-        time.sleep(2)
+            ip.release()
+            time.sleep(2)
     
     print "Got Ip"
 

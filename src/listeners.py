@@ -88,31 +88,50 @@ class Listen(object):
 
             time.sleep(0.5)
 
+    def listen_onesock(self):
+        attitude = self.vehicle.attitude
+        location = self.vehicle.location.global_relative_frame
+        battery = self.vehicle.battery
+        vel = self.vehicle.velocity
+
+        att_obj = {'pitch': attitude.pitch, 'yaw': attitude.yaw, 'roll': attitude.roll}
+        loc_obj = {'lat': location.lat, 'lng': location.lon, 'alt': location.alt}
+        bat_obj = {'voltage': battery.voltage, 'level': tools.calculate_battery(battery.voltage)}
+        vel_obj = {'x': vel[0], 'y': vel[1], 'z': vel[2]}
+        speed_obj = {'groundspeed': self.vehicle.groundspeed, 'airspeed': self.vehicle.airspeed}
+        random_obj = {'armed': self.vehicle.armed, 'compass': self.vehicle.heading, 'mode': self.vehicle.mode.name}
+
+        self.sio.emit('all_info', att_obj, loc_obj, bat_obj, vel_obj, speed_obj, random_obj)
+
+        # self.sio.emit('compass_info', self.vehicle.heading)
+        # self.sio.emit('armed_info', self.vehicle.armed)
+        # self.sio.emit('mode_info', self.vehicle.mode.name)
+
     def _add_listeners(self):
         self.loop = True
         t = threading.Thread(target=self.listen_all)
         t.daemon = True
         t.start()
-        #self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
-        #self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
-        #self.vehicle.add_attribute_listener('battery', self.battery_listener)
-        #self.vehicle.add_attribute_listener('heading', self.compass_listener)
-        #self.vehicle.add_attribute_listener('armed', self.arm_listener)
-        #self.vehicle.add_attribute_listener('mode', self.mode_listener)
-        #self.vehicle.add_attribute_listener('airspeed', self.speed_listener)
-        #self.vehicle.add_attribute_listener('velocity', self.velocity_listener)
+        # self.vehicle.add_attribute_listener('attitude', self.attitude_listener)
+        # self.vehicle.add_attribute_listener('location.global_relative_frame', self.frame_listener)
+        # self.vehicle.add_attribute_listener('battery', self.battery_listener)
+        # self.vehicle.add_attribute_listener('heading', self.compass_listener)
+        # self.vehicle.add_attribute_listener('armed', self.arm_listener)
+        # self.vehicle.add_attribute_listener('mode', self.mode_listener)
+        # self.vehicle.add_attribute_listener('airspeed', self.speed_listener)
+        # self.vehicle.add_attribute_listener('velocity', self.velocity_listener)
 
     def _remove_listeners(self):
-        obj = {'pitch': 0, 'yaw': 0, 'roll': 0}
-        self.sio.emit('gyro', obj)
+        # obj = {'pitch': 0, 'yaw': 0, 'roll': 0}
+        # self.sio.emit('gyro', obj)
 
         self.loop = False
 
-        #self.vehicle.remove_attribute_listener('attitude', self.attitude_listener)
-        #self.vehicle.remove_attribute_listener('location.global_relative_frame', self.frame_listener)
-        #self.vehicle.remove_attribute_listener('battery', self.battery_listener)
-        #self.vehicle.remove_attribute_listener('heading', self.compass_listener)
-        #self.vehicle.remove_attribute_listener('armed', self.arm_listener)
-        #self.vehicle.remove_attribute_listener('mode', self.mode_listener)
-        #self.vehicle.remove_attribute_listener('airspeed', self.speed_listener)
-        #self.vehicle.add_attribute_listener('velocity', self.velocity_listener)
+        # self.vehicle.remove_attribute_listener('attitude', self.attitude_listener)
+        # self.vehicle.remove_attribute_listener('location.global_relative_frame', self.frame_listener)
+        # self.vehicle.remove_attribute_listener('battery', self.battery_listener)
+        # self.vehicle.remove_attribute_listener('heading', self.compass_listener)
+        # self.vehicle.remove_attribute_listener('armed', self.arm_listener)
+        # self.vehicle.remove_attribute_listener('mode', self.mode_listener)
+        # self.vehicle.remove_attribute_listener('airspeed', self.speed_listener)
+        # self.vehicle.add_attribute_listener('velocity', self.velocity_listener)
